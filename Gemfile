@@ -129,6 +129,8 @@ group :development do
   # gem 'test-unit', '~> 3.0'
   gem 'rerun'
   gem 'bullet'
+  gem 'migration_comments'
+  gem 'fake_pipe', git: 'https://github.com/gadogado/fake_pipe.git', branch: 'number', require: false
   # gem 'pry-rails'
 end
 
