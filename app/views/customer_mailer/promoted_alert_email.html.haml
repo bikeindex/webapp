@@ -1,0 +1,17 @@
+%p
+  = t(".html.sorry_to_hear_about_your_bike", brand: @bike.manufacturer.name)
+%p
+  = t(".html.your_promoted_alert", city: @theft_alert.stolen_record.city.present? ? @theft_alert.stolen_record.city : "your city", id: @bike.id)
+
+- if @alert_image.present?
+  .bike-box
+    = image_tag @alert_image
+
+%p
+  = t(".html.additional_info")
+%p
+  = t(".html.safe_return")
+%p
+  = t(".html.regards")
+%p
+  = t(".html.team")

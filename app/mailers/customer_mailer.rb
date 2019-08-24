@@ -128,4 +128,14 @@ class CustomerMailer < ActionMailer::Base
       mail(to: @user.email, from: '"Lily Williams" <lily@bikeindex.org>')
     end
   end
+
+  def promoted_alert_email(theft_alert)
+    @theft_alert = theft_alert
+    @bike = theft_alert.bike
+    @alert_image = @bike.alert_image_url
+    mail(
+      to: theft_alert.creator.email,
+      subject: "Your promoted alert has gone out!",
+    )
+  end
 end
