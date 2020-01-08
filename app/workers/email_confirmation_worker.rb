@@ -4,5 +4,7 @@ class EmailConfirmationWorker < ApplicationWorker
   def perform(user_id)
     user = User.find(user_id)
     CustomerMailer.confirmation_email(user).deliver_now
+  rescue Net::SMTPSyntaxError
+    user.destroy
   end
 end
