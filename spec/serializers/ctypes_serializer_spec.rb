@@ -1,10 +1,12 @@
 require "rails_helper"
 
-RSpec.describe CtypeSerializer do
-  let(:ctype) { FactoryBot.create(:ctype, has_multiple: true) }
-  subject { CtypeSerializer.new(ctype) }
+describe CtypeSerializer, type: :lib do
+  let(:ctype) { FactoryGirl.create(:ctype, has_multiple: true) }
+  let(:serializer) { CtypeSerializer.new(ctype) }
 
-  it { expect(subject.name).to eq(ctype.name) }
-  it { expect(subject.slug).to eq(ctype.slug) }
-  it { expect(subject.has_multiple).to be_truthy }
+  it "is as expected" do
+    expect(serializer.name).to eq(ctype.name)
+    expect(serializer.slug).to eq(ctype.slug)
+    expect(serializer.has_multiple).to be_truthy
+  end
 end
