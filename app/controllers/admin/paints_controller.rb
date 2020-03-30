@@ -1,10 +1,10 @@
 class Admin::PaintsController < Admin::BaseController
-  before_filter :find_paint, only: [:show, :edit, :update, :destroy]
+  before_action :find_paint, only: [:show, :edit, :update, :destroy]
 
   def index
     if params[:name]
-      paints = Paint.where('name LIKE ?', "%#{params[:name]}%")
-    else 
+      paints = Paint.where("name LIKE ?", "%#{params[:name]}%")
+    else
       paints = Paint.order("bikes_count DESC")
     end
     page = params[:page] || 1
@@ -23,13 +23,13 @@ class Admin::PaintsController < Admin::BaseController
   end
 
   def edit
-    @bikes = @paint.bikes.includes(:cycle_type, :paint, :manufacturer, :creation_organization)
+    @bikes = @paint.bikes.includes(:paint, :manufacturer, :creation_organization)
   end
 
   def update
     if @paint.update_attributes(permitted_parameters)
-      black_id = Color.find_by_name('Black').id
-      flash[:success] = 'Paint updated!'
+      black_id = Color.find_by_name("Black").id
+      flash[:success] = "Paint updated!"
       if @paint.reload.color_id.present?
         bikes = @paint.bikes.where(primary_frame_color_id: black_id)
         bikes.each do |bike|
@@ -53,7 +53,7 @@ class Admin::PaintsController < Admin::BaseController
       flash[:error] = "Not allowed! Bikes use that paint! How the fuck did you delete that anyway?"
     else
       @paint.destroy
-      flash[:success] = 'Paint deleted!'
+      flash[:success] = "Paint deleted!"
     end
     redirect_to admin_paints_url
   end
@@ -61,7 +61,7 @@ class Admin::PaintsController < Admin::BaseController
   protected
 
   def permitted_parameters
-    params.require(:paint).permit(Paint.old_attr_accessible)
+    params.require(:paint).permit(:name, :color_id, :manufacturer_id, :secondary_color_id, :tertiary_color_id, :bikes_count)
   end
 
   def find_paint

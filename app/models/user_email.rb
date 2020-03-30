@@ -1,15 +1,13 @@
 class UserEmail < ActiveRecord::Base
-  def self.old_attr_accessible
-    %w(email user_id old_user_id confirmation_token).map(&:to_sym).freeze
-  end
   belongs_to :user, touch: true
-  belongs_to :old_user, class_name: 'User', touch: true
+  belongs_to :old_user, class_name: "User", touch: true
   validates_presence_of :user_id, :email
 
-  scope :confirmed, -> { where('confirmation_token IS NULL') }
-  scope :unconfirmed, -> { where('confirmation_token IS NOT NULL') }
+  scope :confirmed, -> { where("confirmation_token IS NULL") }
+  scope :unconfirmed, -> { where("confirmation_token IS NOT NULL") }
 
   before_validation :normalize_email
+
   def normalize_email
     self.email = EmailNormalizer.normalize(email)
   end
@@ -20,7 +18,7 @@ class UserEmail < ActiveRecord::Base
   end
 
   def self.add_emails_for_user_id(user_id, email_list)
-    email_list.to_s.split(',').reject(&:blank?).each do |str|
+    email_list.to_s.split(",").reject(&:blank?).each do |str|
       email = EmailNormalizer.normalize(str)
       next if where(user_id: user_id, email: email).present?
       ue = self.new(user_id: user_id, email: email)
@@ -58,7 +56,7 @@ class UserEmail < ActiveRecord::Base
   end
 
   def expired
-    created_at > Time.zone.now - 2.hours
+    created_at > Time.current - 2.hours
   end
 
   def make_primary
@@ -83,6 +81,6 @@ class UserEmail < ActiveRecord::Base
   end
 
   def generate_confirmation
-    self.update_attribute :confirmation_token, (Digest::MD5.hexdigest "#{SecureRandom.hex(10)}-#{DateTime.now.to_s}")
+    self.update_attribute :confirmation_token, (Digest::MD5.hexdigest "#{SecureRandom.hex(10)}-#{DateTime.current.to_s}")
   end
 end

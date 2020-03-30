@@ -1,4 +1,4 @@
-# Ignore bundler config
+# Ignore local config files
 /.bundle
 
 # Ignore all logfiles and tempfiles.
@@ -42,4 +42,13 @@ manufacturer.tsv
 /public/packs-test
 /node_modules
 yarn-debug.log*
+yarn-error.log
 .yarn-integrity
+
+# Ignore jest coverage files
+coverage
+
+# Ignore test results
+test-results/
+spec/examples.txt
+public/javascripts

@@ -1,10 +1,11 @@
 module Api
   module V1
     class UsersController < ApiV1Controller
-      before_filter :bust_cache!, only: [:current]
+      before_action :bust_cache!, only: [:current]
+
       def default_serializer_options
         {
-          root: false
+          root: false,
         }
       end
 
@@ -22,9 +23,9 @@ module Api
         feedback_type = params[:request_type]
         if current_user.present? && reason.present? && bike_id.present? && feedback_type.present?
           bike = Bike.find(bike_id)
-          if bike.owner == current_user
+          if bike.authorized?(current_user)
             feedback = Feedback.new(email: current_user.email, body: reason, title: "#{feedback_type.titleize}", feedback_type: feedback_type)
-            feedback.name = (current_user.name.present? && current_user.name) || 'no name'
+            feedback.name = (current_user.name.present? && current_user.name) || "no name"
             feedback.feedback_hash = { bike_id: bike_id }
             if params[:serial_update_serial].present?
               bike.current_stolen_record.update_attribute :tsved_at, nil if bike.current_stolen_record.present?
@@ -44,15 +45,16 @@ module Api
                 bike.save
                 feedback.feedback_hash[:new_manufacturer] = bike.manufacturer.name
               end
-            elsif feedback_type.match('bike_recovery')
+            elsif feedback_type.match("bike_recovery")
               recover_bike(bike, feedback)
             end
+            feedback.user_id = current_user&.id
             feedback.save
-            success = { success: 'submitted request' }
+            success = { success: "submitted request" }
             render json: success and return
           end
         end
-        message = { errors: { not_allowed: 'nuh-uh' } }
+        message = { errors: { not_allowed: "You are not authorized for that bike" } }
         render json: message, status: 403
       end
 
@@ -70,7 +72,7 @@ module Api
                                       can_share_recovery: params[:can_share_recovery])
 
         bike.current_stolen_record.add_recovery_information(
-          params.merge(recovered_description: feedback.body)
+          params.merge(recovered_description: feedback.body).permit!.to_h
         )
       end
     end

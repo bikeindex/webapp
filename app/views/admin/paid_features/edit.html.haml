@@ -1,8 +1,15 @@
 %h1
   Edit #{@paid_feature.name}
 
-- if @paid_feature.is_locked
-  .alert.alert-info{ style: "padding-top: 15px; max-width: 500px;" }
-    %p
-      <strong>#{@paid_feature.name}</strong> is <strong>locked</strong> - which means its <em>name</em> and <em>kind</em> can't be changed. This is done because this feature is being used in the code ;)
+- if @paid_feature.locked?
+  .card.bg-danger{ style: "margin: 40px 0;" }
+    .card-body
+      %p
+        This Feature is used to enable and disable functionality for organizations in Bike Index
+      %p
+        If you need to update it, talk to Seth
 = render partial: "form"
+
+%h3
+  Invoices with this feature
+= render partial: "/admin/organizations/invoices/table", locals: { invoices: @invoices, render_sortable: false, display_organization: true }

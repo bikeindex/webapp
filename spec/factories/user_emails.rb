@@ -1,6 +1,6 @@
-FactoryGirl.define do
+FactoryBot.define do
   factory :user_email do
-    association :user, factory: :confirmed_user
+    user { FactoryBot.create(:user_confirmed) }
     email { generate(:unique_email) }
   end
 end

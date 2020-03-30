@@ -1,13 +1,152 @@
-%h1
-  Editing #{@user.email}
-  - if @user.donor?
-    <span class="donor-icon">D</span>
-  - if @user.paid_org?
-    <span class="paid-org-icon">O</span>
-%h3
-  Donations
-%section.full-screen-table{ style: 'padding-top: 0;' }
-  %table.table.table-striped.table-bordered
+.row
+  .col-md-6
+    %h1
+      %small
+        Editing
+      = @user.display_name
+      - if current_user.developer?
+        %em.small.less-strong
+          id: #{@user.id}
+    %table.table-list
+      %tbody
+        %tr
+          %td
+            Donor
+          %td
+            - if @user.donor?
+              <span class="donor-icon">D</span><span class="less-strong">onor</span>
+              - if @user.paid_org?
+                %br
+            - if @user.paid_org?
+              <span class="less-strong">Paid</span> <span class="paid-org-icon">O</span><span class="less-strong">rganization member</span>
+        %tr
+          %td
+            Email: Newsletters
+          %td
+            = check_mark if @user.notification_newsletters
+        %tr
+          %td
+            Vendor terms?
+          %td
+            - if @user.when_vendor_terms_of_service.present?
+              %span.convertTime.preciseTime
+                = l @user.when_vendor_terms_of_service, format: :convert_time
+        %tr
+          %td
+            Email: Unstolen
+          %td
+            = check_mark if @user.notification_unstolen
+        %tr
+          %td
+            Created
+          %td.convertTime.preciseTime
+            = l @user.created_at, format: :convert_time
+        %tr
+          %td
+            Updated
+          %td.convertTime.preciseTime
+            = l @user.updated_at, format: :convert_time
+        %tr
+          %td
+            Last&nbsp;login
+          %td
+            - if @user.last_login_at.present?
+              %span.convertTime.preciseTime
+                = l @user.last_login_at, format: :convert_time
+            - if @user.last_login_ip.present?
+              %small.less-strong
+                = @user.last_login_ip
+  .col-md-6.mt-auto
+    %table.table-list
+      %tr
+        %td
+          Confirmed?
+        %td
+          - if @user.confirmed?
+            = check_mark
+      %tr
+        %td
+          email
+        %td
+          = @user.email
+          - if @user.secondary_emails.any?
+            %small
+              = @user.secondary_emails.join(", ")
+      %tr
+        %td
+          Name
+        %td
+          = @user.name
+      %tr
+        %td
+          Photo
+        %td
+          - if @user.avatar?
+            = @user.avatar
+      %tr
+        %td
+          Social
+        %td
+          %small
+            - if @user.show_bikes?
+              = link_to "Bike Index profile page", "/users/#{@user.username}", class: "gray-link"
+              - if @user.twitter.present?
+                %br
+            - if @user.twitter.present?
+              Twitter: #{link_to @user.twitter, "https://twitter.com/#{@user.twitter}"}
+      %tr
+        %td
+          Ambassador?
+        %td
+          = check_mark if @user.ambassador?
+      %tr
+        %td
+          Phone
+        %td
+          = @user.phone_display
+      %tr
+        %td
+          Website
+        %td
+          = @user.website
+      %tr
+        %td
+          City
+        %td
+          = @user.city
+
+- if @user.ambassador?
+  %h2 Ambassador Tasks
+  - ambassador = Ambassador.find(@user.id)
+  %p
+    %strong= "#{ambassador.progress_count} complete"
+
+  %table.table.table-striped.table-bordered.ambassador-tasks-table
+    %thead.small-header.thead-light
+      %tr
+        %th Task
+        %th Completed at
+    %tbody
+      - ambassador.ambassador_task_assignments.each do |task|
+        %tr
+          %td
+            %strong= task.title
+          %td
+            - if task.completed_at
+              %span.convertTime= l task.completed_at, format: :convert_time
+.row.mt-4
+  .col-md-6
+    %h4
+      User has #{ pluralize(@bikescount, "bike") }
+  .col-md-6.text-right
+    = link_to "Show all user bikes", admin_bikes_path(search_user_id: @user.id)
+
+= render partial: "admin/bikes/table", locals: { bikes: @bikes }
+
+%h4.mt-4
+  Donations/payments
+.full-screen-table
+  %table.table.table-striped.table-bordered.table-sm
     %thead
       %th
         Date
@@ -15,173 +154,111 @@
         Amount
       %th
         Payment?
-    - @user.payments.each do |payment|
+    - @user.payments.reorder(created_at: :desc).each do |payment|
       %tr
         %td
-          %span.convertTime
-            = l payment.created_at, format: :convert_time
-          %small.convertTimezone
+          = link_to l(payment.created_at, format: :convert_time), admin_payment_path(payment), class: "convertTime"
+          %small.convertTimezone.preciseTime
         %td
           = payment.amount
         %td
-          = "&#x2713;".html_safe if payment.is_payment
+          = payment.display_kind
 
-.row-fluid
-  .span6.padded
-    .form.form-horizontal
-      = form_for [:admin, @user] do |f|
-        - if @user.errors.any?
-          #alert-block
-            .alert.alert-error
-              %h4
-                Please fix the following 
-                = pluralize(@user.errors.count, "error")
-              %ul
-                - @user.errors.full_messages.each do |msg|
-                  %li
-                    = msg
-        %h3
-          User attributes
-        .control-group.padded
-          %lable.control-label
-            Created
-          .controls.convertTime
-            = l @user.created_at, format: :convert_time
-
-        .control-group.padded
-          = f.label :name, class: "control-label"
-          .controls
-            = f.text_field :name
-        .control-group
-          = f.label :email, class: "control-label"
-          .controls
-            = f.text_field :email
-        .control-group
-          = f.label :username, class: "control-label"
-          .controls
-            = f.text_field :username
-        .control-group
-          = f.label :confirmed, class: "control-label"
-          .controls
-            = f.check_box :confirmed, disabled: @user.confirmed
-        .control-group
-          = f.label :superuser, class: "control-label"
-          .controls
-            = f.check_box :superuser
-        - if current_user.developer?
-          .control-group
-            = f.label :developer, class: "control-label"
-            .controls
-              = f.check_box :developer
-        .control-group
-          = f.label :is_content_admin, "News editor", class: "control-label"
-          .controls
-            = f.check_box :is_content_admin
-        .control-group
-          = f.label :banned, class: "control-label"
-          .controls
-            = f.check_box :banned
-        .control-group
-          = f.label :can_send_many_stolen_notifications, class: "control-label"
-          .controls
-            = f.check_box :can_send_many_stolen_notifications
-
-        .padded
-          = f.submit 'Save', class: 'button-green pull-right'
-
-      
+.row
+  .col-md-6
+    %h4.mt-4
+      = @user.memberships.count
+      Memberships
+- if @user.memberships.count > 0
+  = render partial: "/admin/memberships/table", locals: { memberships: @user.memberships }
 
 
-- if @bikes.present?
-  %h2.pull-left
-    = pluralize(@bikes.total_count, "Bike")
-  .paginate-container
-    = paginate @bikes
-  %h3.padded
-    %span
-      #{@user.email}
-    Bikes
-  %ul
-    - @bikes.decorate.each do |bike|
-      - display = bike.title
-      - display = "#{display} (hidden)" if bike.hidden
-      - display = "#{display} (example)" if bike.example
-
-      %li
-        = link_to display, edit_admin_bike_url(bike)
-
-%h3.padded
-  %span
-    #{@user.email}
-  ownerships
-- if @ownerships.present?
-  %h2.pull-left
-    = pluralize(@ownerships.total_count, "Ownership")
-  %section.full-screen-table
-    %table.table.table-striped.table-bordered
-      %thead
-        %th
-          ID
-        %th
-          Created&nbsp;<small class="convertTimezone"></small>
-        %th
-          Creator
-        %th
-          Owner email
-        %th
-          Current?
-      %tbody
-        - @ownerships.each do |ownership|
-          %tr
-            %td
-              = link_to ownership.id, edit_admin_ownership_url(ownership.id)
-            %td
-              %span.convertTime
-                = l ownership.created_at, format: :convert_time
-            %td
-              - u = ownership.creator
-              - if u && u.name.present?
-                = u.name
-              - else
-                = u && u.email
-            %td
-              = ownership.owner_email
-            %td.table-cell-check
-              = "&#x2713;".html_safe if ownership.current
-  .paginate-container
-    = paginate @ownerships
-- else
-  %p
-    #{@user.email} has no Bikes
-
-- if @user.user_emails.count > 1
-  %h2 User emails
-  %section.full-screen-table
-    %table.table.table-striped.table-bordered
-      %thead
-        %th
-          Created&nbsp;<small class="convertTimezone"></small>
-        %th
-          Confirmed
-        %th
-          Primary
-        %th
-          Old User Id
-      %tbody
-        - @user.user_emails.each do |user_email|
-          %tr
-            %td
-              .less-strong-hold
-                %span.less-strong-right.medium-screens
-                  = user_email.id
-              %span.convertTime
+%h4.mt-4 User emails
+.full-screen-table
+  %table.table.table-striped.table-bordered.table-sm
+    %thead
+      %th
+        Created&nbsp;<small class="convertTimezone"></small>
+      %th
+      %th
+        Confirmed
+      %th
+        Primary
+      %th
+        Old User Id
+    %tbody
+      - @user.user_emails.each do |user_email|
+        %tr
+          %td
+            .less-strong-hold
+              %span.less-strong-right.medium-screens
+                = user_email.id
+              %span.convertTime.preciseTime
                 = l user_email.created_at, format: :convert_time
-            %td
-              = "&#x2713;".html_safe if user_email.confirmed
-            %td
-              = "&#x2713;".html_safe if user_email.primary
-            %td
-              = user_email.old_user_id
+          %td= user_email.email
+          %td
+            = check_mark if user_email.confirmed
+          %td
+            = check_mark if user_email.primary
+          %td
+            = user_email.old_user_id
 
-.actions.padded
-  = link_to "Delete #{@user.email}!", admin_user_url(@user), method: :delete, confirm: "Are you sure?", class: "button-red"
+%hr.mt-4
+%h4 Edit
+= form_for [:admin, @user] do |f|
+  - if @user.errors.any?
+    = render partial: "/shared/errors", locals: { name: "User", obj: @user }
+  .row.mt-4
+    .col-md-6
+      .form-group
+        = f.label :name
+        = f.text_field :name, class: "form-control"
+    .col-md-6
+      .form-group
+        = f.label :email
+        = f.email_field :email, class: "form-control"
+  .row
+    .col-md-6
+      .form-group
+        = f.label :username
+        = f.text_field :username, class: "form-control"
+    .col-md-6
+      .form-group
+        = f.label :secondary_emails
+        = text_area_tag :secondary_emails, @user.secondary_emails.join(", "), disabled: true, rows: 1, class: "form-control"
+  .row
+    .col-md-6
+      .form-group
+        = f.label :phone
+        = f.text_field :phone, class: "form-control"
+    .col-lg-3.col-6
+      .form-group
+        .form-check
+          = f.check_box :confirmed, disabled: @user.confirmed, class: "form-check-input"
+          = f.label :confirmed, class: "form-check-label"
+      .form-group
+        .form-check
+          = f.check_box :banned, class: "form-check-input"
+          = f.label :banned, class: "form-check-label"
+      .form-group
+        .form-check.form-check-inline
+          = f.check_box :can_send_many_stolen_notifications, class: "form-check-input"
+          = f.label :can_send_many_stolen_notifications, class: "form-check-label"
+    .col-lg-3.col-6
+      .form-group
+        .form-check.form-check-inline
+          = f.check_box :superuser, class: "form-check-input"
+          = f.label :superuser, class: "form-check-label"
+      .form-group
+        - if current_user.developer?
+          .form-check.form-check-inline
+            = f.check_box :developer, class: "form-check-input"
+            = f.label :developer, class: "form-check-label"
+    .col-6
+      .form-group.mt-2
+        = f.submit 'Save', class: 'btn btn-success'
+
+%hr{ style: "margin-top: 60px;" }
+.mt-4.mb-4.row
+  .col-auto
+    = link_to "Delete #{@user.email}!", admin_user_url(@user.to_param), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-danger less-strong"

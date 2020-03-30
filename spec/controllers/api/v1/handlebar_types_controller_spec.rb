@@ -1,11 +1,10 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe Api::V1::HandlebarTypesController do
-  describe 'index' do
-    it 'loads the page' do
-      FactoryGirl.create(:handlebar_type)
+RSpec.describe Api::V1::HandlebarTypesController, type: :controller do
+  describe "index" do
+    it "loads the page" do
       get :index, format: :json
-      expect(response.code).to eq('200')
+      expect(response.code).to eq("200")
     end
   end
 end

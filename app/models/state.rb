@@ -1,9 +1,6 @@
-class State < ActiveRecord::Base
-  def self.old_attr_accessible
-    %w(name abbreviation country_id).map(&:to_sym).freeze
-  end
-  validates_presence_of :name, :abbreviation, :country_id
-  validates_uniqueness_of :name, :abbreviation
+class State < ApplicationRecord
+  validates :country, presence: true
+  validates :name, :abbreviation, uniqueness: true, presence: true
 
   belongs_to :country
   has_many :locations
@@ -11,8 +8,16 @@ class State < ActiveRecord::Base
 
   default_scope { order(:name) }
 
-  def self.fuzzy_abbr_find(n)
-    n && where('lower(abbreviation) = ?', n.downcase.strip).first
+  def self.fuzzy_find(str)
+    return nil unless str.present?
+    fuzzy_abbr_find(str) || where("lower(name) = ?", str.downcase.strip).first
   end
 
+  def self.fuzzy_abbr_find(str)
+    str && where("lower(abbreviation) = ?", str.downcase.strip).first
+  end
+
+  def self.valid_names
+    StatesAndCountries.states.map { |s| s[:name] }
+  end
 end

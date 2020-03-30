@@ -1,29 +1,29 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe Admin::OwnershipsController do
-  describe 'edit' do
-    it 'renders' do
-      ownership = FactoryGirl.create(:ownership)
-      user = FactoryGirl.create(:admin)
+RSpec.describe Admin::OwnershipsController, type: :controller do
+  describe "edit" do
+    it "renders" do
+      ownership = FactoryBot.create(:ownership)
+      user = FactoryBot.create(:admin)
       set_current_user(user)
-      get :edit, id: ownership.id
+      get :edit, params: { id: ownership.id }
       expect(response.status).to eq(200)
       expect(response).to render_template(:edit)
     end
   end
 
-  describe 'update' do
-    it 'updates ownership' do
-      ownership = FactoryGirl.create(:ownership)
+  describe "update" do
+    it "updates ownership" do
+      ownership = FactoryBot.create(:ownership)
       og_creator = ownership.creator
-      user = FactoryGirl.create(:admin)
+      user = FactoryBot.create(:admin)
       set_current_user(user)
       update_params = {
         user_email: ownership.creator.email,
         creator_email: user.email,
-        user_hidden: true
+        user_hidden: true,
       }
-      put :update, id: ownership.id, ownership: update_params
+      put :update, params: { id: ownership.id, ownership: update_params }
       ownership.reload
       expect(ownership.user).to eq(og_creator)
       expect(ownership.user_hidden).to be_truthy

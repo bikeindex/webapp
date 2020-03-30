@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class OrganizationMessage < ActiveRecord::Base
+class OrganizationMessage < ApplicationRecord
   KIND_ENUM = { geolocated: 0, abandoned_bike: 1 }.freeze
 
   belongs_to :organization
@@ -15,6 +15,15 @@ class OrganizationMessage < ActiveRecord::Base
   before_validation :validate_requirements_for_kind
   after_create :send_email_message
 
+  # To match the feature_slug on organizations
+  def kind_slug
+    "#{kind}_messages"
+  end
+
+  def kind_slug=(val)
+    self.kind = val.gsub(/_messages/, "")
+  end
+
   def set_calculated_attributes
     self.email ||= bike.owner_email
     if latitude.present? && longitude.present?
@@ -26,17 +35,13 @@ class OrganizationMessage < ActiveRecord::Base
   end
 
   def validate_requirements_for_kind # currently all require geolocation and bike, but eventually some won't, e.g. partial registrations
-    self.errors.add(:bike, "Required") unless bike.present?
-    self.errors.add(:location, "(latitude and longitude) required") unless latitude.present? && longitude.present?
-    true # Legacy concerns, so excited for TODO: Rails 5 update
+    self.errors.add(:bike, :required) unless bike.present?
+    self.errors.add(:latitude, :latlon_required) unless latitude.present?
+    self.errors.add(:longitude, :latlon_required) unless longitude.present?
   end
 
   def send_email_message
     # Enable skipping so we can generate sample messages
     EmailOrganizationMessageWorker.perform_async(id) unless ENV["SKIP_ORGANIZED_MESSAGE_SEND"]
-  end
-
-  def subject
-    "#{organization.short_name} - the location of your #{bike.mnfg_name}"
   end
 end

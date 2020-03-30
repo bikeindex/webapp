@@ -1,32 +1,22 @@
-%li{ class: bike.stolen && "blist-stolen" }
-  %a.blist-image-holder{href: bike_url(bike) }
-    - if bike.thumb_path.present?
-      %img{ src: bike.thumb_path, alt: bike.title } 
-  %h3
-    = link_to bike.title_string, bike.list_link_url(target)
-  .blist-primary-group
-    .dl-holder
-      %dl.dl-horizontal
-        = bike.dl_list_item(bike.serial_display, "Serial")  
-        
-        = bike.dl_list_item(bike.frame_colors.to_sentence, "Colors")
-        
-  
-        
-
-  - if bike.stolen and bike.current_stolen_record.present?
-    .blist-stolen-info
-      .dl-holder
-        %dl.dl-horizontal
-          - date_label = "Stolen"
-          - date_label = "Recovered" if bike.recovered
-          %dt
-            Stolen
-          %dd
-            %span.convertTime.preciseTime
+- cache(bike) do
+  %li.bike-box-item
+    %a.bike-list-image{ href: bike_url(bike), class: ('hover-expand' if bike.thumb_path) }
+      = bike.thumb_image
+    .bike-information{ class: ('multi-attr-lists' if bike.current_stolen_record.present?) }
+      %h5.title-link
+        %a{ href: bike_url(bike) }
+          %strong
+            = bike.type unless bike.type == 'bike'
+            = [bike.year, bike.mnfg_name].reject(&:blank?).join(' ')
+          = bike.frame_model.to_s
+      %ul.attr-list
+        = bike.attr_list_item(bike.serial_display, t(".serial"))
+        = bike.attr_list_item(bike.frame_colors.to_sentence, t(".primary_colors"))
+      - if bike.current_stolen_record.present?
+        %ul.attr-list
+          %li
+            %span.attr-title.text-danger
+              = bike.abandoned ? t(".abandoned") : t(".stolen")
+            %span.convertTime
               = l bike.current_stolen_record.date_stolen, format: :convert_time
-        %dl.dl-horizontal
-          = bike.dl_list_item(bike.short_address(bike.current_stolen_record), "From")
-  - pdf ||= false
-  - if pdf
-    = link_to "Printable registration", pdf_bike_url(bike), class: 'printable-registration'
+          = bike.attr_list_item(bike.current_stolen_record.address_location(include_all: true), t(".location"))

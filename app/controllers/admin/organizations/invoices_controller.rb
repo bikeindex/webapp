@@ -9,20 +9,23 @@ class Admin::Organizations::InvoicesController < Admin::BaseController
 
   def new
     @invoice ||= @organization.invoices.new
+    @invoice.end_at = TimeParser.parse(params[:end_at]) if params[:end_at].present?
   end
 
   def show
     redirect_to edit_admin_organization_invoice_path
   end
 
-  def edit; end
+  def edit
+  end
 
   def create
-    @invoice = @organization.invoices.build(permitted_parameters.except(:paid_feature_ids))
+    @invoice = @organization.invoices.build(permitted_parameters.except(:paid_feature_ids, :child_enabled_feature_slugs))
     if @invoice.save
       # Invoice has to be created before it can get paid_feature_ids
       @invoice.paid_feature_ids = permitted_parameters[:paid_feature_ids]
-      flash[:success] = "Invoice created"
+      @invoice.update_attributes(child_enabled_feature_slugs_string: permitted_parameters[:child_enabled_feature_slugs_string])
+      flash[:success] = "Invoice created! #{invoice_is_active_notice(@invoice)}"
       redirect_to admin_organization_invoices_path(organization_id: @organization.to_param)
     else
       render :new
@@ -32,13 +35,14 @@ class Admin::Organizations::InvoicesController < Admin::BaseController
   def update
     if params[:create_following_invoice]
       if @invoice.create_following_invoice
-        flash[:success] = "Invoice created"
+        flash[:success] = "Invoice updated! #{invoice_is_active_notice(@invoice)}"
       else
         flash[:error] = "unable to create following invoice. Was this invoice active?"
       end
       redirect_to admin_organization_invoices_path(organization_id: @organization.to_param)
-    elsif @invoice.update_attributes(permitted_parameters)
-      flash[:success] = "Invoice created"
+    elsif @invoice.update_attributes(permitted_parameters.except(:child_enabled_feature_slugs_string))
+      @invoice.update_attributes(child_enabled_feature_slugs_string: permitted_parameters[:child_enabled_feature_slugs_string])
+      flash[:success] = "Invoice updated! #{invoice_is_active_notice(@invoice)}"
       redirect_to admin_organization_invoices_path(organization_id: @organization.to_param)
     else
       render :edit
@@ -52,13 +56,7 @@ class Admin::Organizations::InvoicesController < Admin::BaseController
   end
 
   def permitted_parameters
-    params.require(:invoice).permit(:paid_feature_ids, :amount_due)
-          .merge(subscription_start_at: TimeParser.parse(time_params[:subscription_start_at], time_params[:timezone]),
-                 subscription_end_at: TimeParser.parse(time_params[:subscription_end_at], time_params[:timezone]))
-  end
-
-  def time_params
-    params.require(:invoice).permit(:subscription_start_at, :subscription_end_at, :timezone)
+    params.require(:invoice).permit(:paid_feature_ids, :amount_due, :notes, :timezone, :start_at, :end_at, :child_enabled_feature_slugs_string)
   end
 
   def find_organization
@@ -70,5 +68,13 @@ class Admin::Organizations::InvoicesController < Admin::BaseController
 
   def find_invoice
     @invoice = @organization.invoices.find(params[:id])
+  end
+
+  def invoice_is_active_notice(invoice)
+    if invoice.is_active?
+      "Invoice is ACTIVE"
+    else
+      "Invoice is NOT active"
+    end
   end
 end

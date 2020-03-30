@@ -1,21 +1,33 @@
-class Country < ActiveRecord::Base
-  def self.old_attr_accessible
-    %w(name iso).map(&:to_sym).freeze
-  end
+class Country < ApplicationRecord
   validates_presence_of :name
-  validates_uniqueness_of :name
-  validates_uniqueness_of :iso
+  validates_uniqueness_of :name, :iso
+
   has_many :stolen_records
   has_many :locations
 
-  def self.fuzzy_iso_find(n)
-    n = 'us' if n.match(/usa/i)
-    n && where('lower(iso) = ?', n.downcase.strip).first
+  def self.select_options
+    pluck(:id, :iso).map do |id, iso|
+      [I18n.t(iso, scope: :countries), id]
+    end
   end
 
+  def self.fuzzy_find(name_or_iso)
+    name_or_iso = name_or_iso.to_s.strip.downcase
+    return if name_or_iso.blank?
+    return united_states if name_or_iso.in? %w[us usa]
+
+    find_by("lower(name) = ? or lower(iso) = ?", name_or_iso, name_or_iso)
+  end
 
   def self.united_states
-    where(name: 'United States', iso: 'US').first_or_create
+    where(name: "United States", iso: "US").first_or_create
   end
 
+  def self.netherlands
+    where(name: "Netherlands", iso: "NL").first_or_create
+  end
+
+  def self.valid_names
+    StatesAndCountries.countries.map { |c| c[:name] }
+  end
 end

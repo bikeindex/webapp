@@ -1,16 +1,17 @@
-class DuplicateBikeFinderWorker
-  include Sidekiq::Worker
-  sidekiq_options queue: 'afterwards', backtrace: true, :retry => false
+class DuplicateBikeFinderWorker < ApplicationWorker
+  sidekiq_options retry: false
 
   def perform(bike_id)
-    serial_segments = Bike.find(bike_id).normalized_serial_segments
+    bike = Bike.find_by_id(bike_id)
+    return true unless bike.present?
+    serial_segments = bike.normalized_serial_segments
 
     serial_segments.each do |serial_segment|
       existing_duplicate = DuplicateBikeGroup.includes(:normalized_serial_segments).
         where(normalized_serial_segments: { segment: serial_segment.segment }).first
       if existing_duplicate.present?
-        serial_segment.update_attribute :duplicate_bike_group_id, existing_duplicate.id 
-        existing_duplicate.update_attribute :added_bike_at, Time.now
+        serial_segment.update_attribute :duplicate_bike_group_id, existing_duplicate.id
+        existing_duplicate.update_attribute :added_bike_at, Time.current
       else
         duplicate_segments = NormalizedSerialSegment.where(segment: serial_segment.segment)
         if duplicate_segments.count > 1
@@ -23,8 +24,5 @@ class DuplicateBikeFinderWorker
         end
       end
     end
-
-
   end
-
 end

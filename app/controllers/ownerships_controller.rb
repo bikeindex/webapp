@@ -1,41 +1,39 @@
 class OwnershipsController < ApplicationController
-  before_filter :find_ownership
-  before_filter -> { authenticate_user(no_user_flash_msg) }
+  before_action :find_ownership
+  before_action :authenticate_user_and_set_flash
 
   def show
     bike = Bike.unscoped.find(@ownership.bike_id)
-    if @ownership.can_be_claimed_by(current_user)
+    if @ownership.claimable_by?(current_user)
       if @ownership.current
         @ownership.mark_claimed
-        flash[:success] = "Looks like this is your #{bike.type}! Good work, you just claimed it."
+        flash[:success] = translation(:you_claimed_it, bike_type: bike.type)
         redirect_to edit_bike_url(bike)
       else
-        flash[:error] = "That used to be your #{bike.type} but isn't anymore! Contact us if this doesn't make sense."
+        flash[:error] = translation(:no_longer_your_bike, bike_type: bike.type)
         redirect_to bike_url(bike)
       end
     else
-      flash[:error] = "That doesn't appear to be your #{bike.type}! Contact us if this doesn't make sense."
+      flash[:error] = translation(:not_your_bike, bike_type: bike.type)
       redirect_to bike_url(bike)
-    end
-  end
-
-  def no_user_flash_msg
-    if @ownership && @ownership.bike.present?
-      type = "#{@ownership.bike.type}"
-      if @ownership.user.present?
-        "The owner of this #{type} already has an account on Bike Index. Sign in to claim it!"
-      else
-        "Create an account to claim that #{type}! Use the email you used when registering it and you will be able to claim it after signing up!"
-      end
-    else
-      "Sorry, unable to find that bike"
     end
   end
 
   private
 
+  def authenticate_user_and_set_flash
+    if @ownership&.bike.blank?
+      authenticate_user(translation_key: :cannot_find_bike)
+    elsif @ownership&.user.present?
+      authenticate_user(translation_key: :owner_already_has_account,
+                        translation_args: { bike_type: @ownership.bike.type })
+    else
+      authenticate_user(translation_key: :create_account_to_claim,
+                        translation_args: { bike_type: @ownership.bike.type })
+    end
+  end
+
   def find_ownership
     @ownership = Ownership.find(params[:id])
   end
-
 end

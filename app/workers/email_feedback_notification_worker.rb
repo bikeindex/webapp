@@ -1,7 +1,5 @@
-class EmailFeedbackNotificationWorker
-  include Sidekiq::Worker
-  sidekiq_options queue: 'notify'
-  sidekiq_options backtrace: true
+class EmailFeedbackNotificationWorker < ApplicationWorker
+  sidekiq_options queue: "notify", retry: 1
 
   def perform(feedback_id)
     @feedback = Feedback.find(feedback_id)

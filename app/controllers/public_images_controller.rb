@@ -1,10 +1,10 @@
 class PublicImagesController < ApplicationController
-  before_filter :find_image_if_owned, only: [:edit, :update, :destroy, :is_private]
-  before_filter :ensure_authorized_to_create!, only: [:create]
+  before_action :find_image_if_owned, only: [:edit, :update, :destroy, :is_private]
+  before_action :ensure_authorized_to_create!, only: [:create]
 
   def show
     @public_image = PublicImage.find(params[:id])
-    if @public_image.present? && @public_image.imageable_type == 'Bike'
+    if @public_image.present? && @public_image.imageable_type == "Bike"
       @owner_viewing = true if @public_image.imageable.current_ownership.present? && @public_image.imageable.owner == current_user
     end
   end
@@ -14,7 +14,7 @@ class PublicImagesController < ApplicationController
     if params[:bike_id].present?
       @public_image.imageable = @bike
       @public_image.save
-      render 'create_revised' and return
+      render "create_revised" and return
     else
       if params[:blog_id].present?
         @blog = Blog.find(params[:blog_id])
@@ -25,9 +25,9 @@ class PublicImagesController < ApplicationController
         @public_image.imageable = current_organization
       end
       @public_image.save
-      render 'create' and return
+      render json: { public_image: @public_image } and return
     end
-    flash[:error] = "Whoops! We can't let you create that image."
+    flash[:error] = translation(:cannot_create)
     redirect_to @public_image.present? ? @public_image.imageable : user_root_url
   end
 
@@ -36,12 +36,12 @@ class PublicImagesController < ApplicationController
 
   def is_private
     @public_image.update_attribute :is_private, params[:is_private]
-    render nothing: true
+    head :ok
   end
 
   def update
     if @public_image.update_attributes(permitted_parameters)
-      redirect_to edit_bike_url(@public_image.imageable), notice: 'Image was successfully updated.'
+      redirect_to edit_bike_url(@public_image.imageable), notice: translation(:image_updated)
     else
       render :edit
     end
@@ -51,12 +51,16 @@ class PublicImagesController < ApplicationController
     @imageable = @public_image.imageable
     imageable_id = @public_image.imageable_id
     imageable_type = @public_image.imageable_type
+    if imageable_type == "MailSnippet"
+      flash[:error] = translation(:cannot_delete)
+      redirect_to admin_organization_custom_layouts_path(imageable_id) and return
+    end
     @public_image.destroy
-    flash[:success] = 'Image was successfully deleted'
+    flash[:success] = translation(:image_deleted)
     if params[:page].present?
       redirect_to edit_bike_url(imageable_id, page: params[:page]) and return
-    elsif imageable_type == 'Blog'
-      redirect_to edit_admin_news_url(@imageable.title_slug) and return
+    elsif imageable_type == "Blog"
+      redirect_to edit_admin_news_url(@imageable.title_slug), status: 303 and return
     else
       redirect_to edit_bike_url(imageable_id)
     end
@@ -69,7 +73,7 @@ class PublicImagesController < ApplicationController
         image.update_attribute :listing_order, index + 1 if current_user_image_owner(image)
       end
     end
-    render nothing: true
+    head :ok
   end
 
   protected
@@ -81,26 +85,30 @@ class PublicImagesController < ApplicationController
     end
     # Otherwise, it's a blog image or an organization image (or someone messing about),
     # so ensure the current user is admin authorized
-    return true if current_user && current_user.admin_authorized('any')
-    render json: { error: 'Access denied' }, status: 401 and return
+    return true if current_user && current_user.superuser?
+    render json: { error: "Access denied" }, status: 401 and return
   end
 
   def current_user_image_owner(public_image)
-    if public_image.imageable_type == 'Bike'
+    if public_image.imageable_type == "Bike"
       Bike.unscoped.find(public_image.imageable_id).owner == current_user
-    elsif public_image.imageable_type == 'Blog'
-      current_user && current_user.admin_authorized('content')
+    elsif public_image.imageable_type == "Blog" || public_image.imageable_type == "MailSnippet"
+      current_user && current_user.superuser?
     end
   end
 
   def permitted_parameters
-    params.require(:public_image).permit(PublicImage.old_attr_accessible)
+    if params[:upload_plugin] == "uppy"
+      { image: params[:file], name: params[:name] }
+    else
+      params.require(:public_image).permit(:image, :name, :imageable, :listing_order, :remote_image_url, :is_private)
+    end
   end
 
   def find_image_if_owned
     @public_image = PublicImage.unscoped.find(params[:id])
     unless current_user_image_owner(@public_image)
-      flash[:error] = "Sorry! You don't have permission to edit that image."
+      flash[:error] = translation(:no_permission_to_edit)
       redirect_to @public_image.imageable and return
     end
   end

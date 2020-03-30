@@ -1,272 +1,258 @@
-- if @fast_attr_update
-  = render 'fast_attr_update'
-- else
-  #bike_edit_root_url.hidden{data: { url: ENV['BASE_URL'] }}
-  #chosen-container
-    %ul.bike-boxes
-      = render partial: "/bikes/bike", locals: { bike: @bike, target: "show" }
-    - if @bike.stolen
-      %h4
-        = link_to 'Stolen edit page', edit_admin_stolen_bike_url(@bike)
-    .dl-holder
-      %dl.dl-horizontal
-        = @bike.dl_from_attribute('owner_email')
-        - if @bike.owner.present?
-          = @bike.dl_list_item((link_to @bike.owner.email, edit_admin_user_url(@bike.owner)), 'Current Owner')
-          %dt Donor
-          %dd
-            - if @bike.owner.donor?
-              TRUE!
-          %dt Paid Org
-          %dd
-            - if @bike.owner.paid_org?
-              - @bike.owner.organizations.paid.each do |organization|
-                <small>#{link_to organization.name, admin_organization_path(organization)}</small>
-                %br
-        - else
-          %strong
-            Missing owner!
+= render partial: "/admin/bikes/bike", locals: { bike: @bike, target: "show" }
 
-        - if @bike.current_stolen_record.present?
-          = @bike.dl_list_item(@bike.current_stolen_record.phone, 'Phone')
-      %dl.dl-horizontal
-        %dt Created
-        %dd
+.d-none{ data: { url: ENV['BASE_URL'] } }
+
+- if @bike.current_stolen_record.present? && @bike.current_stolen_record.theft_alerts.any?
+  %h4.mt-2
+    Promoted Alerts
+  = render partial: "/admin/theft_alerts/table", locals: { theft_alerts: @bike.current_stolen_record.theft_alerts, skip_bike: true }
+
+- if @recoveries.present?
+  %h3.mt-4
+    Recoveries
+  = render partial: "/admin/recoveries/table", locals: { recoveries: @recoveries, skip_bike: true }
+
+.admin-subnav.midpage-subnav
+  .col-12
+    %h1
+      Edit Bike
+      - if @bike.deleted?.present?
+        %span.text-danger
+          Deleted at:
           %span.convertTime
-            = l @bike.created_at, format: :convert_time
-          %small.convertTimezone
-        - if @bike.creation_organization.present?
-          %dt Creation org
-          %dd
-            = link_to @bike.creation_organization.name, admin_organization_path(@bike.creation_organization)
-          = @bike.dl_from_attribute('cached_data')
-    %hr
-    = form_for [:admin, @bike], html: { class: 'form form-horizontal admin-bike-edit' } do |f|
-      = hidden_field_tag :fast_attr_update, @fast_attr_update
-    
-    
-      .clearfix
-        .bike-fields
-          - if @bike.errors.any?
-            #alert-block
-              .alert.alert-error
-                %h4
-                  Please fix the following 
-                  = pluralize(@bike.errors.count, "error")
-                %ul
-                  - @bike.errors.full_messages.each do |msg|
-                    %li
-                      = msg
-          .control-group
-            = f.label :cycle_type_id, "Cycle type", class: "control-label"
-            .controls
-              = collection_select( :bike, :cycle_type_id, CycleType.all, :id, :name, :required =>true )
-
-          .control-group
-            = f.label :serial_number, class: "control-label"
-            .controls
-              = f.text_field :serial_number, :required =>true
-          
-          .control-group
-            = f.label :has_no_serial, class: "control-label"
-            .controls
-              = f.check_box :has_no_serial
-
-
-          .control-group.select-jsonified
-            = f.label :manufacturer_id, class: "control-label"
-            .controls
-              = f.text_field :manufacturer_id, data: { initial: { id: @bike.manufacturer.id, text: @bike.manufacturer.name }.to_json }
-
-          .control-group
-            = f.label :manufacturer_other, "Other frame manufacturer", class: "control-label"
-            .controls
-              = f.text_field :manufacturer_other
-          
-          .control-group
-            = f.label :card_id, "Spokecard id", class: "control-label"
-            .controls
-              = f.text_field :card_id
-          .control-group
-            = f.label :hidden, "Hidden (fake delete)", class: "control-label"
-            .controls
-              = f.check_box :hidden
-
-        .bike-fields
-          .control-group
-            = f.label :frame_model, class: "control-label"
-            .controls
-              = f.text_field :frame_model
-          .control-group
-            = f.label :year, class: "control-label"
-            .controls
-              = f.text_field :year
-          / Disable for performance reasons.
-          / .control-group.chosen-select
-          /   = f.label :paint_id, "Paint description", class: "control-label"
-          /   .controls
-          /     = collection_select( :bike, :paint_id, Paint.all, :id, :name, required: true, prompt: "Choose paint" )
-          .control-group.chosen-select
-            = f.label :primary_frame_color_id, class: "control-label"
-            .controls
-              = collection_select(:bike, :primary_frame_color_id, Color.all, :id, :name, required: true, prompt: "Choose color" )
-          - organizations = Organization.all
-          .control-group.chosen-select
-            = f.label :creation_organization_id, class: "control-label"
-            .controls
-              = collection_select(:bike, :creation_organization_id, organizations, :id, :name, prompt: "Choose organization")
-          .control-group.chosen-select
-            = f.label :bike_organization_ids, 'Current orgs', class: 'control-label'
-            .controls
-              = f.collection_select(:bike_organization_ids, organizations, :id, :name, { include_blank: true, prompt: '' }, { multiple: true })
-
-          .control-group
-            = f.label :description, class: "control-label"
-            .controls
-              = f.text_field :description
-          .control-group
-            = f.label :owner_email, class: "control-label"
-            .controls
-              = f.text_field :owner_email, :required =>true
-          
-      .actions
-        .control-group
-          = submit_tag "Update the bike", class: "button-green"
-          = link_to "Delete bike", admin_bike_url(@bike), method: :delete, confirm: "Are you sure?", class: "button-red"
-          - if current_user.superuser
-            = link_to "edit bike attributes", edit_admin_bike_url(@bike, fast_attr_update: true)
-
-      - if @bike.stolen and @bike.find_current_stolen_record.present?
-        %hr
-        .clearfix
-          = f.fields_for :stolen_records do |s|
-            - if s.object.current
-              .bike-fields
-                #stolen-bike-location.control-group
-                  = s.label :street, "Stolen location", class: "control-label"
-                  #country_select_container.controls
-                    = s.collection_select(:country_id, Country.all, :id, :name, prompt: "Choose country" )
-                    %p.other-value
-                      = Country.united_states.id
-                  .controls.extra-field
-                    = s.text_field :street, placeholder: "Intersection or address"
-                  .controls.extra-field
-                    = s.text_field :city, placeholder: "City"
-                  .controls.extra-field
-                    = s.text_field :zipcode, placeholder: "Zipcode"
-                  #state-select.controls.extra-field.chosen-select
-                    = s.collection_select(:state_id, State.all, :id, :name, include_blank: true, prompt: "State" )
-              .bike-fields
-                .control-group
-                  = f.label :theft_description, "theft description", class: "control-label"
-                  .controls
-                    = s.text_field :theft_description, placeholder: "description"
-              .bike-fields
-                .control-group
-                  = f.label :estimated_value, "Estimated value", class: "control-label"
-                  .controls
-                    = s.number_field :estimated_value
-            - else
-              / Don't put anything
-              / Because there might be more stolen records and it breaks without
-              / an else
-          .bike-fields
-            .control-group
-              = f.label :stolen, "Bike is stolen", class: "control-label"
-              .controls
-                = f.check_box :stolen
-            #admin-recovery-fields
-              .input-group
-              .input-group
-                .control-group.large-text
-                  %label.control-label{ for: :mark_recovered_reason }
-                    How was it recovered
-                  .controls#recovery_descr
-                    = text_area_tag :mark_recovered_reason, nil, rows: 3
-              .input-group
-                .control-group
-                  %label.control-label{ for: :mark_recovered_we_helped }
-                    Did the Index help?
-                  .controls
-                    = check_box_tag :mark_recovered_we_helped, true
-              .input-group
-                .control-group
-                  %label.control-label{ for: :can_share_recovery }
-                    Can we share?
-                  .controls
-                    = check_box_tag :can_share_recovery, true
-              
+            = l @bike.deleted_at, format: :convert_time
 
 
 
-  %section.full-screen-table
-    %table.table.table-striped.table-bordered
-      %thead
-        %th
-          ID
-        %th
-          Created&nbsp;<small class="convertTimezone"></small>
-        %th
-          Creator
-        %th
-          Owner email
-        %th
-          Current?
-        %th
-          Claimed?
-        %th
+- if @bike.user_hidden
+  %h2.text-danger.mb-4{ style: "margin-bottom: 2rem; text-align: center;" }
+    Marked HIDDEN by the user
+    %small
+      no one but the user (and bike index admins) can see it
+
+= form_for [:admin, @bike], html: { class: 'form form-horizontal admin-bike-edit' } do |f|
+  - if @bike.errors.any?
+    = render partial: "/shared/errors", locals: { name: "Bike", obj: @bike }
+  .row
+    .col-md-4.col-lg-3
+      .form-group.fancy-select.unfancy
+        = f.label :cycle_type, "Cycle type"
+        = select(:bike, :cycle_type, CycleType.select_options, { required: true })
+    .col-6.col-md-4.col-lg-5
+      .form-group
+        = f.label :serial_number
+        = f.text_field :serial_number, required: true, class: "form-control #{@bike.no_serial? ? 'fake-disabled' : ''}"
+    .col-6.col-md-4.col-lg-3
+      .serial-check.serial-check-unknown.ml-2
+        = check_box_tag :has_no_serial, true, @bike.serial_unknown?, class: "form-check-input"
+        = label_tag :has_no_serial, "Unknown serial"
+      .serial-check.serial-check-made-without.ml-2
+        = f.check_box :made_without_serial, class: "form-check-input"
+        = f.label :made_without_serial
+  .row
+    .col-6.col-md-4.col-lg-3
+      .form-group.fancy-select.unfancy
+        = f.label :manufacturer_id
+        = collection_select(:bike, :manufacturer_id, Manufacturer.frame_makers, :id, :name, {}, { required: true, class: "form-control" })
+    .col-6.col-md-4.col-lg-3
+      .form-group
+        = f.label :manufacturer_other do
+          %span.d-none.d-sm-inline
+            Other mnfg
+          %small.less-strong
+            %span.d-none.d-xl-inline
+              Only necessary
+            if Manufacturer <em>Other</em>
+        = f.text_field :manufacturer_other, class: "form-control"
+    .col-6.col-md-4.col-lg-3
+      .form-group
+        = f.label :year
+        = f.text_field :year, class: "form-control"
+    .col-6.col-md-4.col-lg-3
+      .form-group.fancy-select.unfancy
+        = f.label :primary_frame_color_id
+        = collection_select(:bike, :primary_frame_color_id, Color.all, :id, :name, { prompt: "Choose color" }, { required: true, class: "form-control" })
+    .col-md-4.col-lg-3
+      .form-group
+        = f.label :frame_model
+        = f.text_field :frame_model, class: "form-control"
+    .col-md-4.col-lg-3
+      .form-group
+        = f.label :owner_email
+        = f.text_field :owner_email, required: true, class: "form-control"
+    .col-md-4.col-lg-3
+      %label.d-none.d-md-block
+        &nbsp;
+      = f.label :hidden do
+        = f.check_box :hidden
+        - if @bike.user_hidden
           User hidden
-      %tbody
-        - @bike.ownerships.each do |ownership|
-          %tr
-            %td
-              = link_to ownership.id, edit_admin_ownership_url(ownership.id)
-            %td
-              %span.hidden
-                = ownership.created_at.strftime("%-m.%-d.%Y %-H.%M")
+        - else
+          Hidden (oldskool fake delete)
+  .row.mt-2
+    .col-md-4.col-lg-6
+      .form-group
+        = f.label :description
+        = f.text_area :description, class: "form-control"
+    - if @organizations.present?
+      .col-md-4.col-lg-3
+        .form-group.fancy-select.unfancy
+          = f.label :creation_organization_id
+          = f.collection_select(:creation_organization_id, @organizations, :id, :name, { prompt: "Choose organization" }, { class: "form-control" })
+      .col-md-4.col-lg-3
+        .form-group.fancy-select.unfancy
+          = f.label :bike_organization_ids, 'Current orgs'
+          = f.collection_select(:bike_organization_ids, @organizations, :id, :name, { include_blank: true, prompt: '' }, { multiple: true, class: "form-control" })
+
+  .row.mt-4
+    .col-12.text-center
+      = submit_tag "Update the bike", class: "btn btn-success btn-lg"
+
+  - if @bike.stolen and @bike.current_stolen_record.present?
+    %h4.mt-4#edit-stolen-record
+      Edit Stolen Record
+    = f.fields_for :stolen_records do |s|
+      - next unless s.object.current
+      .row.mt-4
+        .col-md-4
+          .row
+            #stolen-bike-location.form-group.fancy-select.unfancy.col-6
+              #country_select_container
+                = label :country, "Country"
+                = s.select(:country_id, Country.select_options, prompt: "Choose country")
+                %p.d-none
+                  = Country.united_states.id
+            .form-group.fancy-select.unfancy.col-6
+              = s.label :state, "State"
+              = s.collection_select(:state_id, State.all, :id, :name, include_blank: true, prompt: "State")
+          .form-group
+            = label :street, "Intersection or address"
+            = s.text_field :street, placeholder: "Intersection or address", class: "form-control"
+          .row
+            .col-6.form-group
+              = label :city, "City"
+              = s.text_field :city, placeholder: "City", class: "form-control"
+            .col-6.form-group
+              = label :zipcode, "Zipcode"
+              = s.text_field :zipcode, placeholder: "Zipcode", class: "form-control"
+
+        .col-md-8
+          .form-group
+            = s.label :theft_description, "Theft description"
+            = s.text_area :theft_description, placeholder: "Theft Description", class: "form-control"
+          .row
+            .col-6.form-group
+              = s.label :police_report_department
+              = s.text_field :police_report_department, class: "form-control"
+            .col-6.form-group
+              = s.label :police_report_number
+              = s.text_field :police_report_number, class: "form-control"
+          .row
+            .col-6.form-group
+              = s.label :estimated_value, "Estimated value"
+              = s.number_field :estimated_value, class: "form-control"
+            .col-6.form-group#stolenCheckBox
+              = f.label :stolen do
+                = f.check_box :stolen
+                Bike is stolen
+      #adminRecoveryFields.collapse
+        %hr
+        .row
+          .col-md-6
+            .form-group
+              = label :mark_recovered_reason, "How was it recovered"
+              = text_area_tag :mark_recovered_reason, nil, rows: 3, class: "form-control"
+          .col-md-6
+            .form-group
+              = label_tag :mark_recovered_we_helped do
+                = check_box_tag :mark_recovered_we_helped, true
+                Did Bike Index help?
+            .form-group
+              = label_tag :can_share_recovery do
+                = check_box_tag :can_share_recovery, true
+                Can Share
+%h3.mt-4
+  Ownerships
+.full-screen-table
+  %table.table.table-striped.table-bordered.table-sm
+    %thead.thead-light
+      %th.d-none.d-lg-table-cell
+        ID
+      %th
+        Created&nbsp;<small class="convertTimezone"></small>
+      %th
+        Creator
+      %th
+        Owner email
+      %th
+        Current?
+      %th
+        Claimed?
+      %th.d-none.d-md-table-cell
+        User hidden
+    %tbody
+      - @bike.ownerships.each do |ownership|
+        %tr
+          %td.d-none.d-lg-table-cell
+            = ownership.id
+          %td
+            -# Only show ownership editing to developers
+            - if current_user.developer?
+              %a.convertTime{href: edit_admin_ownership_url(ownership.id)}
+                = l ownership.created_at, format: :convert_time
+            - else
               %span.convertTime
                 = l ownership.created_at, format: :convert_time
-            %td
-              - u = ownership.creator
-              - if u.name.present?
-                = u.name
-              - else
-                = u.email
-            %td
-              = ownership.owner_email
-            %td.table-cell-check
-              = "&#x2713;".html_safe if ownership.current
-            %td.table-cell-check
-              = "&#x2713;".html_safe if ownership.claimed
-            %td.table-cell-check
-              = "&#x2713;".html_safe if ownership.user_hidden
-  - if @recoveries.any?
-    %h3.padded
-      Recoveries
-    %section.full-screen-table
-      %table.table.table-striped.table-bordered
-        %thead
-          %th
-            Date Recovered&nbsp;<small class="convertTimezone"></small>
-          %th
-            Description
-          %th
-            Helped?
-          %th
-            Share?
-          %th
-            unrecover
-        %tbody
-          - @recoveries.each do |recovery|
-            %tr
-              %td
-                %span.convertTime
-                  = l recovery.date_recovered, format: :convert_time
-              %td
-                = recovery.recovered_description
-              %td.table-cell-check
-                = "&#x2713;".html_safe if recovery.index_helped_recovery
-              %td.table-cell-check
-                = "&#x2713;".html_safe if recovery.can_share_recovery
-              %td
-                = link_to 'unrecover', unrecover_admin_bikes_path(stolen_record_id: recovery.id, bike_id: @bike.id), method: :put, data: { confirm: "Are you sure you want to mark this #{@bike.type} unrecovered? The #{@bike.type} will be stolen again." }
+          %td
+            - u = ownership.creator
+            - if u.name.present?
+              = u.name
+            - else
+              = u.email
+          %td
+            = ownership.owner_email
+          %td.table-cell-check
+            = check_mark if ownership.current
+          %td.table-cell-check
+            = check_mark if ownership.claimed
+          %td.table-cell-check.d-none.d-md-table-cell
+            = check_mark if ownership.user_hidden
+
+- if @bike.bike_stickers.present?
+  %h3.mt-4
+    Stickers
+  = render partial: "/admin/bike_stickers/table", locals: { bike_stickers: @bike.bike_stickers }
+
+.row.mt-4.mb-4
+  .col-6
+    = link_to "Bike messages", admin_feedbacks_path(search_bike_id: @bike.to_param), class: "btn btn-outline-primary"
+  .col-6.text-right
+    = link_to "Delete bike", admin_bike_url(@bike), method: :delete, data: { confirm: "Are you sure?" }, class: "btn btn-danger ml-4"
+
+#BParamsView.mt-4.collapse
+  %hr
+  .row
+    - if @bike.b_params.any?
+      - @bike.b_params.each do |b_param|
+        .col-md-6
+          %table.table-list
+            %tbody
+              %tr
+                %td
+                  Created
+                %td
+                  %span.convertTime
+                    = l b_param.created_at, format: :convert_time
+              %tr
+                %td
+                  Updated
+                %td
+                  %span.convertTime
+                    = l b_param.updated_at, format: :convert_time
+          = pretty_print_json(b_param.params)
+    - else
+      %p
+        No creation records exist
+.mt-4
+%a.gray-link{ href: "#BParamsView", data: { toggle: "collapse", target: "#BParamsView" } }
+  View Creation data

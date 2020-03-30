@@ -1,10 +1,3 @@
---
--- PostgreSQL database dump
---
-
--- Dumped from database version 10.3
--- Dumped by pg_dump version 10.3
-
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -12,22 +5,9 @@ SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
+SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
-
---
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: -
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
 
 --
 -- Name: fuzzystrmatch; Type: EXTENSION; Schema: -; Owner: -
@@ -84,6 +64,115 @@ ALTER SEQUENCE public.ads_id_seq OWNED BY public.ads.id;
 
 
 --
+-- Name: alert_images; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.alert_images (
+    id integer NOT NULL,
+    stolen_record_id integer NOT NULL,
+    image character varying,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: alert_images_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.alert_images_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: alert_images_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.alert_images_id_seq OWNED BY public.alert_images.id;
+
+
+--
+-- Name: ambassador_task_assignments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ambassador_task_assignments (
+    id integer NOT NULL,
+    user_id integer NOT NULL,
+    ambassador_task_id integer NOT NULL,
+    completed_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: ambassador_task_assignments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.ambassador_task_assignments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ambassador_task_assignments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.ambassador_task_assignments_id_seq OWNED BY public.ambassador_task_assignments.id;
+
+
+--
+-- Name: ambassador_tasks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ambassador_tasks (
+    id integer NOT NULL,
+    description character varying DEFAULT ''::character varying NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    title character varying DEFAULT ''::character varying NOT NULL
+);
+
+
+--
+-- Name: ambassador_tasks_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.ambassador_tasks_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ambassador_tasks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.ambassador_tasks_id_seq OWNED BY public.ambassador_tasks.id;
+
+
+--
+-- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ar_internal_metadata (
+    key character varying NOT NULL,
+    value character varying,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
 -- Name: b_params; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -127,42 +216,6 @@ ALTER SEQUENCE public.b_params_id_seq OWNED BY public.b_params.id;
 
 
 --
--- Name: bike_codes; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.bike_codes (
-    id integer NOT NULL,
-    kind integer DEFAULT 0,
-    code character varying,
-    bike_id integer,
-    organization_id integer,
-    user_id integer,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    claimed_at timestamp without time zone
-);
-
-
---
--- Name: bike_codes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.bike_codes_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: bike_codes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.bike_codes_id_seq OWNED BY public.bike_codes.id;
-
-
---
 -- Name: bike_organizations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -172,7 +225,8 @@ CREATE TABLE public.bike_organizations (
     organization_id integer,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    deleted_at timestamp without time zone
+    deleted_at timestamp without time zone,
+    can_not_edit_claimed boolean DEFAULT false NOT NULL
 );
 
 
@@ -196,20 +250,92 @@ ALTER SEQUENCE public.bike_organizations_id_seq OWNED BY public.bike_organizatio
 
 
 --
+-- Name: bike_sticker_batches; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.bike_sticker_batches (
+    id integer NOT NULL,
+    user_id integer,
+    organization_id integer,
+    notes text,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    code_number_length integer,
+    prefix character varying
+);
+
+
+--
+-- Name: bike_sticker_batches_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.bike_sticker_batches_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: bike_sticker_batches_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.bike_sticker_batches_id_seq OWNED BY public.bike_sticker_batches.id;
+
+
+--
+-- Name: bike_stickers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.bike_stickers (
+    id integer NOT NULL,
+    kind integer DEFAULT 0,
+    code character varying,
+    bike_id integer,
+    organization_id integer,
+    user_id integer,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    claimed_at timestamp without time zone,
+    previous_bike_id integer,
+    bike_sticker_batch_id integer,
+    code_integer integer,
+    code_prefix character varying
+);
+
+
+--
+-- Name: bike_stickers_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.bike_stickers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: bike_stickers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.bike_stickers_id_seq OWNED BY public.bike_stickers.id;
+
+
+--
 -- Name: bikes; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.bikes (
     id integer NOT NULL,
     name character varying(255),
-    cycle_type_id integer,
     serial_number character varying(255) NOT NULL,
     frame_model character varying(255),
     manufacturer_id integer,
     rear_tire_narrow boolean DEFAULT true,
-    frame_material_id integer,
     number_of_seats integer,
-    propulsion_type_id integer,
     creation_organization_id integer,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
@@ -223,26 +349,23 @@ CREATE TABLE public.bikes (
     thumb_path text,
     video_embed text,
     year integer,
-    has_no_serial boolean DEFAULT false NOT NULL,
     creator_id integer,
     front_tire_narrow boolean,
     primary_frame_color_id integer,
     secondary_frame_color_id integer,
     tertiary_frame_color_id integer,
-    handlebar_type_id integer,
     handlebar_type_other character varying(255),
     front_wheel_size_id integer,
     rear_wheel_size_id integer,
     rear_gear_type_id integer,
     front_gear_type_id integer,
-    additional_registration character varying(255),
+    extra_registration_number character varying(255),
     belt_drive boolean DEFAULT false NOT NULL,
     coaster_brake boolean DEFAULT false NOT NULL,
     frame_size character varying(255),
     frame_size_unit character varying(255),
     pdf character varying(255),
-    card_id integer,
-    recovered boolean DEFAULT false NOT NULL,
+    abandoned boolean DEFAULT false NOT NULL,
     paint_id integer,
     registered_new boolean,
     example boolean DEFAULT false NOT NULL,
@@ -259,9 +382,17 @@ CREATE TABLE public.bikes (
     updator_id integer,
     is_for_sale boolean DEFAULT false NOT NULL,
     made_without_serial boolean DEFAULT false NOT NULL,
-    stolen_lat double precision,
-    stolen_long double precision,
-    creation_state_id integer
+    creation_state_id integer,
+    frame_material integer,
+    handlebar_type integer,
+    cycle_type integer DEFAULT 0,
+    propulsion_type integer DEFAULT 0,
+    deleted_at timestamp without time zone,
+    city character varying,
+    latitude double precision,
+    longitude double precision,
+    status integer DEFAULT 0,
+    address character varying
 );
 
 
@@ -305,7 +436,9 @@ CREATE TABLE public.blogs (
     is_listicle boolean DEFAULT false NOT NULL,
     index_image character varying(255),
     index_image_id integer,
-    index_image_lg character varying(255)
+    index_image_lg character varying(255),
+    language integer DEFAULT 0 NOT NULL,
+    canonical_url character varying
 );
 
 
@@ -341,7 +474,8 @@ CREATE TABLE public.bulk_imports (
     no_notify boolean DEFAULT false,
     import_errors json DEFAULT '{}'::json,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    is_ascend boolean DEFAULT false
 );
 
 
@@ -519,7 +653,9 @@ CREATE TABLE public.creation_states (
     is_pos boolean DEFAULT false NOT NULL,
     is_new boolean DEFAULT false NOT NULL,
     creator_id integer,
-    bulk_import_id integer
+    bulk_import_id integer,
+    pos_kind integer DEFAULT 0,
+    status integer DEFAULT 0
 );
 
 
@@ -589,12 +725,12 @@ CREATE TABLE public.customer_contacts (
     creator_id integer,
     creator_email character varying(255),
     title character varying(255),
-    contact_type character varying(255),
     body text,
     bike_id integer,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    info_hash text
+    info_hash jsonb DEFAULT '{}'::jsonb,
+    kind integer DEFAULT 0 NOT NULL
 );
 
 
@@ -615,38 +751,6 @@ CREATE SEQUENCE public.customer_contacts_id_seq
 --
 
 ALTER SEQUENCE public.customer_contacts_id_seq OWNED BY public.customer_contacts.id;
-
-
---
--- Name: cycle_types; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.cycle_types (
-    id integer NOT NULL,
-    name character varying(255),
-    slug character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: cycle_types_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.cycle_types_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: cycle_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.cycle_types_id_seq OWNED BY public.cycle_types.id;
 
 
 --
@@ -720,6 +824,88 @@ ALTER SEQUENCE public.exports_id_seq OWNED BY public.exports.id;
 
 
 --
+-- Name: external_registry_bikes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.external_registry_bikes (
+    id integer NOT NULL,
+    type character varying NOT NULL,
+    country_id integer NOT NULL,
+    serial_number character varying NOT NULL,
+    serial_normalized character varying NOT NULL,
+    external_id character varying NOT NULL,
+    extra_registration_number character varying,
+    date_stolen timestamp without time zone,
+    category character varying,
+    cycle_type character varying,
+    description character varying,
+    frame_colors character varying,
+    frame_model character varying,
+    location_found character varying,
+    mnfg_name character varying,
+    status character varying,
+    info_hash jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: external_registry_bikes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.external_registry_bikes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: external_registry_bikes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.external_registry_bikes_id_seq OWNED BY public.external_registry_bikes.id;
+
+
+--
+-- Name: external_registry_credentials; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.external_registry_credentials (
+    id integer NOT NULL,
+    type character varying NOT NULL,
+    app_id character varying,
+    access_token character varying,
+    access_token_expires_at timestamp without time zone,
+    refresh_token character varying,
+    info_hash jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: external_registry_credentials_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.external_registry_credentials_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: external_registry_credentials_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.external_registry_credentials_id_seq OWNED BY public.external_registry_credentials.id;
+
+
+--
 -- Name: feedbacks; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -732,8 +918,8 @@ CREATE TABLE public.feedbacks (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     feedback_type character varying(255),
-    feedback_hash text,
-    user_id integer
+    user_id integer,
+    feedback_hash jsonb
 );
 
 
@@ -757,22 +943,22 @@ ALTER SEQUENCE public.feedbacks_id_seq OWNED BY public.feedbacks.id;
 
 
 --
--- Name: flavor_texts; Type: TABLE; Schema: public; Owner: -
+-- Name: flipper_features; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.flavor_texts (
+CREATE TABLE public.flipper_features (
     id integer NOT NULL,
-    message character varying(255),
+    key character varying NOT NULL,
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL
 );
 
 
 --
--- Name: flavor_texts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: flipper_features_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.flavor_texts_id_seq
+CREATE SEQUENCE public.flipper_features_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -781,30 +967,31 @@ CREATE SEQUENCE public.flavor_texts_id_seq
 
 
 --
--- Name: flavor_texts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: flipper_features_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.flavor_texts_id_seq OWNED BY public.flavor_texts.id;
+ALTER SEQUENCE public.flipper_features_id_seq OWNED BY public.flipper_features.id;
 
 
 --
--- Name: frame_materials; Type: TABLE; Schema: public; Owner: -
+-- Name: flipper_gates; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.frame_materials (
+CREATE TABLE public.flipper_gates (
     id integer NOT NULL,
-    name character varying(255),
+    feature_key character varying NOT NULL,
+    key character varying NOT NULL,
+    value character varying,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    slug character varying(255)
+    updated_at timestamp without time zone NOT NULL
 );
 
 
 --
--- Name: frame_materials_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: flipper_gates_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.frame_materials_id_seq
+CREATE SEQUENCE public.flipper_gates_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -813,10 +1000,10 @@ CREATE SEQUENCE public.frame_materials_id_seq
 
 
 --
--- Name: frame_materials_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: flipper_gates_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.frame_materials_id_seq OWNED BY public.frame_materials.id;
+ALTER SEQUENCE public.flipper_gates_id_seq OWNED BY public.flipper_gates.id;
 
 
 --
@@ -855,23 +1042,25 @@ ALTER SEQUENCE public.front_gear_types_id_seq OWNED BY public.front_gear_types.i
 
 
 --
--- Name: handlebar_types; Type: TABLE; Schema: public; Owner: -
+-- Name: impound_records; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.handlebar_types (
+CREATE TABLE public.impound_records (
     id integer NOT NULL,
-    name character varying(255),
+    bike_id integer,
+    user_id integer,
+    organization_id integer,
+    retrieved_at timestamp without time zone,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    slug character varying(255)
+    updated_at timestamp without time zone NOT NULL
 );
 
 
 --
--- Name: handlebar_types_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: impound_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE public.handlebar_types_id_seq
+CREATE SEQUENCE public.impound_records_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -880,10 +1069,10 @@ CREATE SEQUENCE public.handlebar_types_id_seq
 
 
 --
--- Name: handlebar_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+-- Name: impound_records_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
 --
 
-ALTER SEQUENCE public.handlebar_types_id_seq OWNED BY public.handlebar_types.id;
+ALTER SEQUENCE public.impound_records_id_seq OWNED BY public.impound_records.id;
 
 
 --
@@ -967,7 +1156,10 @@ CREATE TABLE public.invoices (
     amount_due_cents integer,
     amount_paid_cents integer,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    notes text,
+    child_enabled_feature_slugs jsonb,
+    currency character varying DEFAULT 'USD'::character varying NOT NULL
 );
 
 
@@ -1051,7 +1243,8 @@ CREATE TABLE public.locations (
     deleted_at timestamp without time zone,
     shown boolean DEFAULT false,
     country_id integer,
-    state_id integer
+    state_id integer,
+    address character varying
 );
 
 
@@ -1239,7 +1432,10 @@ CREATE TABLE public.memberships (
     invited_email character varying(255),
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    deleted_at timestamp without time zone
+    deleted_at timestamp without time zone,
+    sender_id integer,
+    claimed_at timestamp without time zone,
+    email_invitation_sent_at timestamp without time zone
 );
 
 
@@ -1383,7 +1579,8 @@ CREATE TABLE public.oauth_applications (
     owner_type character varying(255),
     is_internal boolean DEFAULT false NOT NULL,
     can_send_stolen_notifications boolean DEFAULT false NOT NULL,
-    scopes character varying(255) DEFAULT ''::character varying NOT NULL
+    scopes character varying(255) DEFAULT ''::character varying NOT NULL,
+    confidential boolean DEFAULT false NOT NULL
 );
 
 
@@ -1404,44 +1601,6 @@ CREATE SEQUENCE public.oauth_applications_id_seq
 --
 
 ALTER SEQUENCE public.oauth_applications_id_seq OWNED BY public.oauth_applications.id;
-
-
---
--- Name: organization_invitations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.organization_invitations (
-    id integer NOT NULL,
-    invitee_email character varying(255),
-    invitee_name character varying(255),
-    invitee_id integer,
-    organization_id integer,
-    inviter_id integer,
-    redeemed boolean,
-    membership_role character varying(255) DEFAULT 'member'::character varying,
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    deleted_at timestamp without time zone
-);
-
-
---
--- Name: organization_invitations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.organization_invitations_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: organization_invitations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.organization_invitations_id_seq OWNED BY public.organization_invitations.id;
 
 
 --
@@ -1499,29 +1658,29 @@ CREATE TABLE public.organizations (
     website character varying(255),
     short_name character varying(255),
     show_on_map boolean,
-    sent_invitation_count integer DEFAULT 0,
     deleted_at timestamp without time zone,
     is_suspended boolean DEFAULT false NOT NULL,
     auto_user_id integer,
-    org_type character varying(255) DEFAULT 'shop'::character varying NOT NULL,
     access_token character varying(255),
-    new_bike_notification text,
     api_access_approved boolean DEFAULT false NOT NULL,
     approved boolean DEFAULT true,
-    use_additional_registration_field boolean DEFAULT false NOT NULL,
     avatar character varying(255),
     is_paid boolean DEFAULT false NOT NULL,
     lock_show_on_map boolean DEFAULT false NOT NULL,
     landing_html text,
-    show_bulk_import boolean DEFAULT false,
-    has_bike_codes boolean DEFAULT false NOT NULL,
-    has_bike_search boolean DEFAULT false NOT NULL,
-    geolocated_emails boolean DEFAULT false NOT NULL,
-    abandoned_bike_emails boolean DEFAULT false NOT NULL,
-    require_address_on_registration boolean DEFAULT false NOT NULL,
-    show_partial_registrations boolean DEFAULT false NOT NULL,
-    paid_feature_slugs jsonb,
-    parent_organization_id integer
+    enabled_feature_slugs jsonb,
+    parent_organization_id integer,
+    kind integer,
+    ascend_name character varying,
+    registration_field_labels jsonb DEFAULT '{}'::jsonb,
+    pos_kind integer DEFAULT 0,
+    previous_slug character varying,
+    child_ids jsonb,
+    search_radius integer DEFAULT 50 NOT NULL,
+    location_latitude double precision,
+    location_longitude double precision,
+    regional_ids jsonb,
+    manual_pos_kind integer
 );
 
 
@@ -1625,12 +1784,12 @@ CREATE TABLE public.paid_features (
     kind integer DEFAULT 0,
     amount_cents integer,
     name character varying,
-    slug character varying,
-    is_locked boolean DEFAULT false NOT NULL,
     description text,
     details_link character varying,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    feature_slugs text[] DEFAULT '{}'::text[],
+    currency character varying DEFAULT 'USD'::character varying NOT NULL
 );
 
 
@@ -1690,6 +1849,55 @@ ALTER SEQUENCE public.paints_id_seq OWNED BY public.paints.id;
 
 
 --
+-- Name: parking_notifications; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.parking_notifications (
+    id integer NOT NULL,
+    kind integer DEFAULT 0,
+    bike_id integer,
+    user_id integer,
+    organization_id integer,
+    impound_record_id integer,
+    initial_record_id integer,
+    internal_notes text,
+    street character varying,
+    latitude double precision,
+    longitude double precision,
+    accuracy double precision,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    zipcode character varying,
+    city character varying,
+    neighborhood character varying,
+    hide_address boolean DEFAULT false,
+    country_id bigint,
+    state_id bigint,
+    message text,
+    location_from_address boolean DEFAULT false
+);
+
+
+--
+-- Name: parking_notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.parking_notifications_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: parking_notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.parking_notifications_id_seq OWNED BY public.parking_notifications.id;
+
+
+--
 -- Name: payments; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1705,10 +1913,11 @@ CREATE TABLE public.payments (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     email character varying(255),
-    is_payment boolean DEFAULT false NOT NULL,
-    kind integer DEFAULT 0,
+    payment_method integer DEFAULT 0,
     organization_id integer,
-    invoice_id integer
+    invoice_id integer,
+    currency character varying DEFAULT 'USD'::character varying NOT NULL,
+    kind integer
 );
 
 
@@ -1732,38 +1941,6 @@ ALTER SEQUENCE public.payments_id_seq OWNED BY public.payments.id;
 
 
 --
--- Name: propulsion_types; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.propulsion_types (
-    id integer NOT NULL,
-    name character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL,
-    slug character varying(255)
-);
-
-
---
--- Name: propulsion_types_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.propulsion_types_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: propulsion_types_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.propulsion_types_id_seq OWNED BY public.propulsion_types.id;
-
-
---
 -- Name: public_images; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1776,7 +1953,8 @@ CREATE TABLE public.public_images (
     imageable_type character varying(255),
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
-    is_private boolean DEFAULT false NOT NULL
+    is_private boolean DEFAULT false NOT NULL,
+    external_image_url text
 );
 
 
@@ -1843,7 +2021,7 @@ CREATE TABLE public.recovery_displays (
     stolen_record_id integer,
     quote text,
     quote_by character varying(255),
-    date_recovered timestamp without time zone,
+    recovered_at timestamp without time zone,
     link character varying(255),
     image character varying(255),
     created_at timestamp without time zone NOT NULL,
@@ -1985,7 +2163,7 @@ CREATE TABLE public.stolen_records (
     approved boolean DEFAULT false NOT NULL,
     receive_notifications boolean DEFAULT true,
     proof_of_ownership boolean,
-    date_recovered timestamp without time zone,
+    recovered_at timestamp without time zone,
     recovered_description text,
     index_helped_recovery boolean DEFAULT false NOT NULL,
     can_share_recovery boolean DEFAULT false NOT NULL,
@@ -1995,7 +2173,12 @@ CREATE TABLE public.stolen_records (
     create_open311 boolean DEFAULT false NOT NULL,
     tsved_at timestamp without time zone,
     estimated_value integer,
-    recovery_link_token text
+    recovery_link_token text,
+    show_address boolean DEFAULT false,
+    recovering_user_id integer,
+    recovery_display_status integer DEFAULT 0,
+    neighborhood character varying,
+    address character varying
 );
 
 
@@ -2019,6 +2202,83 @@ ALTER SEQUENCE public.stolen_records_id_seq OWNED BY public.stolen_records.id;
 
 
 --
+-- Name: theft_alert_plans; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.theft_alert_plans (
+    id integer NOT NULL,
+    name character varying DEFAULT ''::character varying NOT NULL,
+    amount_cents integer NOT NULL,
+    views integer NOT NULL,
+    duration_days integer NOT NULL,
+    description character varying DEFAULT ''::character varying NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    language integer DEFAULT 0 NOT NULL,
+    currency character varying DEFAULT 'USD'::character varying NOT NULL
+);
+
+
+--
+-- Name: theft_alert_plans_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.theft_alert_plans_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: theft_alert_plans_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.theft_alert_plans_id_seq OWNED BY public.theft_alert_plans.id;
+
+
+--
+-- Name: theft_alerts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.theft_alerts (
+    id integer NOT NULL,
+    stolen_record_id integer,
+    theft_alert_plan_id integer,
+    payment_id integer,
+    user_id integer,
+    status integer DEFAULT 0 NOT NULL,
+    facebook_post_url character varying DEFAULT ''::character varying NOT NULL,
+    begin_at timestamp without time zone,
+    end_at timestamp without time zone,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    notes text
+);
+
+
+--
+-- Name: theft_alerts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.theft_alerts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: theft_alerts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.theft_alerts_id_seq OWNED BY public.theft_alerts.id;
+
+
+--
 -- Name: tweets; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -2030,7 +2290,10 @@ CREATE TABLE public.tweets (
     image character varying,
     alignment character varying,
     created_at timestamp without time zone NOT NULL,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    twitter_account_id integer,
+    stolen_record_id integer,
+    original_tweet_id integer
 );
 
 
@@ -2051,6 +2314,56 @@ CREATE SEQUENCE public.tweets_id_seq
 --
 
 ALTER SEQUENCE public.tweets_id_seq OWNED BY public.tweets.id;
+
+
+--
+-- Name: twitter_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.twitter_accounts (
+    id integer NOT NULL,
+    active boolean DEFAULT false NOT NULL,
+    "default" boolean DEFAULT false NOT NULL,
+    "national" boolean DEFAULT false NOT NULL,
+    latitude double precision,
+    longitude double precision,
+    address character varying,
+    append_block character varying,
+    city character varying,
+    consumer_key character varying NOT NULL,
+    consumer_secret character varying NOT NULL,
+    country character varying,
+    language character varying,
+    neighborhood character varying,
+    screen_name character varying NOT NULL,
+    state character varying,
+    user_secret character varying NOT NULL,
+    user_token character varying NOT NULL,
+    twitter_account_info jsonb DEFAULT '{}'::jsonb,
+    created_at timestamp without time zone NOT NULL,
+    updated_at timestamp without time zone NOT NULL,
+    last_error character varying,
+    last_error_at timestamp without time zone
+);
+
+
+--
+-- Name: twitter_accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.twitter_accounts_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: twitter_accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.twitter_accounts_id_seq OWNED BY public.twitter_accounts.id;
 
 
 --
@@ -2096,7 +2409,7 @@ CREATE TABLE public.users (
     name character varying(255),
     email character varying(255),
     password text,
-    last_login timestamp without time zone,
+    last_login_at timestamp without time zone,
     superuser boolean DEFAULT false NOT NULL,
     password_reset_token text,
     created_at timestamp without time zone NOT NULL,
@@ -2112,7 +2425,6 @@ CREATE TABLE public.users (
     show_phone boolean DEFAULT true,
     show_bikes boolean DEFAULT false NOT NULL,
     username character varying(255),
-    has_stolen_bikes boolean,
     avatar character varying(255),
     description text,
     title text,
@@ -2124,14 +2436,22 @@ CREATE TABLE public.users (
     can_send_many_stolen_notifications boolean DEFAULT false NOT NULL,
     auth_token character varying(255),
     stripe_id character varying(255),
-    is_paid_member boolean DEFAULT false NOT NULL,
-    paid_membership_info text,
-    is_content_admin boolean DEFAULT false NOT NULL,
-    my_bikes_hash text,
-    is_emailable boolean DEFAULT false NOT NULL,
+    notification_newsletters boolean DEFAULT false NOT NULL,
     developer boolean DEFAULT false NOT NULL,
-    bike_actions_organization_id integer,
-    partner_data json
+    partner_data jsonb,
+    latitude double precision,
+    longitude double precision,
+    street character varying,
+    city character varying,
+    country_id integer,
+    state_id integer,
+    notification_unstolen boolean DEFAULT true,
+    my_bikes_hash jsonb,
+    preferred_language character varying,
+    last_login_ip character varying,
+    magic_link_token text,
+    has_stolen_bikes_without_locations boolean DEFAULT false,
+    address character varying
 );
 
 
@@ -2196,6 +2516,27 @@ ALTER TABLE ONLY public.ads ALTER COLUMN id SET DEFAULT nextval('public.ads_id_s
 
 
 --
+-- Name: alert_images id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alert_images ALTER COLUMN id SET DEFAULT nextval('public.alert_images_id_seq'::regclass);
+
+
+--
+-- Name: ambassador_task_assignments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ambassador_task_assignments ALTER COLUMN id SET DEFAULT nextval('public.ambassador_task_assignments_id_seq'::regclass);
+
+
+--
+-- Name: ambassador_tasks id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ambassador_tasks ALTER COLUMN id SET DEFAULT nextval('public.ambassador_tasks_id_seq'::regclass);
+
+
+--
 -- Name: b_params id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2203,17 +2544,24 @@ ALTER TABLE ONLY public.b_params ALTER COLUMN id SET DEFAULT nextval('public.b_p
 
 
 --
--- Name: bike_codes id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.bike_codes ALTER COLUMN id SET DEFAULT nextval('public.bike_codes_id_seq'::regclass);
-
-
---
 -- Name: bike_organizations id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.bike_organizations ALTER COLUMN id SET DEFAULT nextval('public.bike_organizations_id_seq'::regclass);
+
+
+--
+-- Name: bike_sticker_batches id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bike_sticker_batches ALTER COLUMN id SET DEFAULT nextval('public.bike_sticker_batches_id_seq'::regclass);
+
+
+--
+-- Name: bike_stickers id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bike_stickers ALTER COLUMN id SET DEFAULT nextval('public.bike_stickers_id_seq'::regclass);
 
 
 --
@@ -2287,13 +2635,6 @@ ALTER TABLE ONLY public.customer_contacts ALTER COLUMN id SET DEFAULT nextval('p
 
 
 --
--- Name: cycle_types id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.cycle_types ALTER COLUMN id SET DEFAULT nextval('public.cycle_types_id_seq'::regclass);
-
-
---
 -- Name: duplicate_bike_groups id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2308,6 +2649,20 @@ ALTER TABLE ONLY public.exports ALTER COLUMN id SET DEFAULT nextval('public.expo
 
 
 --
+-- Name: external_registry_bikes id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.external_registry_bikes ALTER COLUMN id SET DEFAULT nextval('public.external_registry_bikes_id_seq'::regclass);
+
+
+--
+-- Name: external_registry_credentials id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.external_registry_credentials ALTER COLUMN id SET DEFAULT nextval('public.external_registry_credentials_id_seq'::regclass);
+
+
+--
 -- Name: feedbacks id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2315,17 +2670,17 @@ ALTER TABLE ONLY public.feedbacks ALTER COLUMN id SET DEFAULT nextval('public.fe
 
 
 --
--- Name: flavor_texts id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: flipper_features id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.flavor_texts ALTER COLUMN id SET DEFAULT nextval('public.flavor_texts_id_seq'::regclass);
+ALTER TABLE ONLY public.flipper_features ALTER COLUMN id SET DEFAULT nextval('public.flipper_features_id_seq'::regclass);
 
 
 --
--- Name: frame_materials id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: flipper_gates id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.frame_materials ALTER COLUMN id SET DEFAULT nextval('public.frame_materials_id_seq'::regclass);
+ALTER TABLE ONLY public.flipper_gates ALTER COLUMN id SET DEFAULT nextval('public.flipper_gates_id_seq'::regclass);
 
 
 --
@@ -2336,10 +2691,10 @@ ALTER TABLE ONLY public.front_gear_types ALTER COLUMN id SET DEFAULT nextval('pu
 
 
 --
--- Name: handlebar_types id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: impound_records id; Type: DEFAULT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.handlebar_types ALTER COLUMN id SET DEFAULT nextval('public.handlebar_types_id_seq'::regclass);
+ALTER TABLE ONLY public.impound_records ALTER COLUMN id SET DEFAULT nextval('public.impound_records_id_seq'::regclass);
 
 
 --
@@ -2441,13 +2796,6 @@ ALTER TABLE ONLY public.oauth_applications ALTER COLUMN id SET DEFAULT nextval('
 
 
 --
--- Name: organization_invitations id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.organization_invitations ALTER COLUMN id SET DEFAULT nextval('public.organization_invitations_id_seq'::regclass);
-
-
---
 -- Name: organization_messages id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -2490,17 +2838,17 @@ ALTER TABLE ONLY public.paints ALTER COLUMN id SET DEFAULT nextval('public.paint
 
 
 --
+-- Name: parking_notifications id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.parking_notifications ALTER COLUMN id SET DEFAULT nextval('public.parking_notifications_id_seq'::regclass);
+
+
+--
 -- Name: payments id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.payments ALTER COLUMN id SET DEFAULT nextval('public.payments_id_seq'::regclass);
-
-
---
--- Name: propulsion_types id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.propulsion_types ALTER COLUMN id SET DEFAULT nextval('public.propulsion_types_id_seq'::regclass);
 
 
 --
@@ -2546,10 +2894,31 @@ ALTER TABLE ONLY public.stolen_records ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
+-- Name: theft_alert_plans id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.theft_alert_plans ALTER COLUMN id SET DEFAULT nextval('public.theft_alert_plans_id_seq'::regclass);
+
+
+--
+-- Name: theft_alerts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.theft_alerts ALTER COLUMN id SET DEFAULT nextval('public.theft_alerts_id_seq'::regclass);
+
+
+--
 -- Name: tweets id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.tweets ALTER COLUMN id SET DEFAULT nextval('public.tweets_id_seq'::regclass);
+
+
+--
+-- Name: twitter_accounts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.twitter_accounts ALTER COLUMN id SET DEFAULT nextval('public.twitter_accounts_id_seq'::regclass);
 
 
 --
@@ -2582,6 +2951,38 @@ ALTER TABLE ONLY public.ads
 
 
 --
+-- Name: alert_images alert_images_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alert_images
+    ADD CONSTRAINT alert_images_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ambassador_task_assignments ambassador_task_assignments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ambassador_task_assignments
+    ADD CONSTRAINT ambassador_task_assignments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ambassador_tasks ambassador_tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ambassador_tasks
+    ADD CONSTRAINT ambassador_tasks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ar_internal_metadata
+    ADD CONSTRAINT ar_internal_metadata_pkey PRIMARY KEY (key);
+
+
+--
 -- Name: b_params b_params_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2590,19 +2991,27 @@ ALTER TABLE ONLY public.b_params
 
 
 --
--- Name: bike_codes bike_codes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.bike_codes
-    ADD CONSTRAINT bike_codes_pkey PRIMARY KEY (id);
-
-
---
 -- Name: bike_organizations bike_organizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.bike_organizations
     ADD CONSTRAINT bike_organizations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: bike_sticker_batches bike_sticker_batches_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bike_sticker_batches
+    ADD CONSTRAINT bike_sticker_batches_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: bike_stickers bike_stickers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bike_stickers
+    ADD CONSTRAINT bike_stickers_pkey PRIMARY KEY (id);
 
 
 --
@@ -2686,14 +3095,6 @@ ALTER TABLE ONLY public.customer_contacts
 
 
 --
--- Name: cycle_types cycle_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.cycle_types
-    ADD CONSTRAINT cycle_types_pkey PRIMARY KEY (id);
-
-
---
 -- Name: duplicate_bike_groups duplicate_bike_groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2710,6 +3111,22 @@ ALTER TABLE ONLY public.exports
 
 
 --
+-- Name: external_registry_bikes external_registry_bikes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.external_registry_bikes
+    ADD CONSTRAINT external_registry_bikes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: external_registry_credentials external_registry_credentials_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.external_registry_credentials
+    ADD CONSTRAINT external_registry_credentials_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: feedbacks feedbacks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2718,19 +3135,19 @@ ALTER TABLE ONLY public.feedbacks
 
 
 --
--- Name: flavor_texts flavor_texts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: flipper_features flipper_features_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.flavor_texts
-    ADD CONSTRAINT flavor_texts_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.flipper_features
+    ADD CONSTRAINT flipper_features_pkey PRIMARY KEY (id);
 
 
 --
--- Name: frame_materials frame_materials_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: flipper_gates flipper_gates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.frame_materials
-    ADD CONSTRAINT frame_materials_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.flipper_gates
+    ADD CONSTRAINT flipper_gates_pkey PRIMARY KEY (id);
 
 
 --
@@ -2742,11 +3159,11 @@ ALTER TABLE ONLY public.front_gear_types
 
 
 --
--- Name: handlebar_types handlebar_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: impound_records impound_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.handlebar_types
-    ADD CONSTRAINT handlebar_types_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.impound_records
+    ADD CONSTRAINT impound_records_pkey PRIMARY KEY (id);
 
 
 --
@@ -2862,14 +3279,6 @@ ALTER TABLE ONLY public.oauth_applications
 
 
 --
--- Name: organization_invitations organization_invitations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.organization_invitations
-    ADD CONSTRAINT organization_invitations_pkey PRIMARY KEY (id);
-
-
---
 -- Name: organization_messages organization_messages_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -2918,19 +3327,19 @@ ALTER TABLE ONLY public.paints
 
 
 --
+-- Name: parking_notifications parking_notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.parking_notifications
+    ADD CONSTRAINT parking_notifications_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: payments payments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.payments
     ADD CONSTRAINT payments_pkey PRIMARY KEY (id);
-
-
---
--- Name: propulsion_types propulsion_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.propulsion_types
-    ADD CONSTRAINT propulsion_types_pkey PRIMARY KEY (id);
 
 
 --
@@ -2982,11 +3391,35 @@ ALTER TABLE ONLY public.stolen_notifications
 
 
 --
+-- Name: theft_alert_plans theft_alert_plans_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.theft_alert_plans
+    ADD CONSTRAINT theft_alert_plans_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: theft_alerts theft_alerts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.theft_alerts
+    ADD CONSTRAINT theft_alerts_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: tweets tweets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.tweets
     ADD CONSTRAINT tweets_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: twitter_accounts twitter_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.twitter_accounts
+    ADD CONSTRAINT twitter_accounts_pkey PRIMARY KEY (id);
 
 
 --
@@ -3014,17 +3447,38 @@ ALTER TABLE ONLY public.wheel_sizes
 
 
 --
+-- Name: index_alert_images_on_stolen_record_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_alert_images_on_stolen_record_id ON public.alert_images USING btree (stolen_record_id);
+
+
+--
+-- Name: index_ambassador_task_assignments_on_ambassador_task_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ambassador_task_assignments_on_ambassador_task_id ON public.ambassador_task_assignments USING btree (ambassador_task_id);
+
+
+--
+-- Name: index_ambassador_task_assignments_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_ambassador_task_assignments_on_user_id ON public.ambassador_task_assignments USING btree (user_id);
+
+
+--
+-- Name: index_ambassador_tasks_on_title; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_ambassador_tasks_on_title ON public.ambassador_tasks USING btree (title);
+
+
+--
 -- Name: index_b_params_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_b_params_on_organization_id ON public.b_params USING btree (organization_id);
-
-
---
--- Name: index_bike_codes_on_bike_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_bike_codes_on_bike_id ON public.bike_codes USING btree (bike_id);
 
 
 --
@@ -3049,10 +3503,31 @@ CREATE INDEX index_bike_organizations_on_organization_id ON public.bike_organiza
 
 
 --
--- Name: index_bikes_on_card_id; Type: INDEX; Schema: public; Owner: -
+-- Name: index_bike_sticker_batches_on_organization_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_bikes_on_card_id ON public.bikes USING btree (card_id);
+CREATE INDEX index_bike_sticker_batches_on_organization_id ON public.bike_sticker_batches USING btree (organization_id);
+
+
+--
+-- Name: index_bike_sticker_batches_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_bike_sticker_batches_on_user_id ON public.bike_sticker_batches USING btree (user_id);
+
+
+--
+-- Name: index_bike_stickers_on_bike_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_bike_stickers_on_bike_id ON public.bike_stickers USING btree (bike_id);
+
+
+--
+-- Name: index_bike_stickers_on_bike_sticker_batch_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_bike_stickers_on_bike_sticker_batch_id ON public.bike_stickers USING btree (bike_sticker_batch_id);
 
 
 --
@@ -3070,10 +3545,24 @@ CREATE INDEX index_bikes_on_current_stolen_record_id ON public.bikes USING btree
 
 
 --
--- Name: index_bikes_on_cycle_type_id; Type: INDEX; Schema: public; Owner: -
+-- Name: index_bikes_on_deleted_at; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX index_bikes_on_cycle_type_id ON public.bikes USING btree (cycle_type_id);
+CREATE INDEX index_bikes_on_deleted_at ON public.bikes USING btree (deleted_at);
+
+
+--
+-- Name: index_bikes_on_latitude_and_longitude; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_bikes_on_latitude_and_longitude ON public.bikes USING btree (latitude, longitude);
+
+
+--
+-- Name: index_bikes_on_listing_order; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_bikes_on_listing_order ON public.bikes USING btree (listing_order DESC);
 
 
 --
@@ -3109,13 +3598,6 @@ CREATE INDEX index_bikes_on_primary_frame_color_id ON public.bikes USING btree (
 --
 
 CREATE INDEX index_bikes_on_secondary_frame_color_id ON public.bikes USING btree (secondary_frame_color_id);
-
-
---
--- Name: index_bikes_on_stolen_lat_and_stolen_long; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_bikes_on_stolen_lat_and_stolen_long ON public.bikes USING btree (stolen_lat, stolen_long);
 
 
 --
@@ -3175,10 +3657,80 @@ CREATE INDEX index_exports_on_user_id ON public.exports USING btree (user_id);
 
 
 --
+-- Name: index_external_registry_bikes_on_country_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_external_registry_bikes_on_country_id ON public.external_registry_bikes USING btree (country_id);
+
+
+--
+-- Name: index_external_registry_bikes_on_external_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_external_registry_bikes_on_external_id ON public.external_registry_bikes USING btree (external_id);
+
+
+--
+-- Name: index_external_registry_bikes_on_serial_normalized; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_external_registry_bikes_on_serial_normalized ON public.external_registry_bikes USING btree (serial_normalized);
+
+
+--
+-- Name: index_external_registry_bikes_on_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_external_registry_bikes_on_type ON public.external_registry_bikes USING btree (type);
+
+
+--
+-- Name: index_external_registry_credentials_on_type; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_external_registry_credentials_on_type ON public.external_registry_credentials USING btree (type);
+
+
+--
 -- Name: index_feedbacks_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_feedbacks_on_user_id ON public.feedbacks USING btree (user_id);
+
+
+--
+-- Name: index_flipper_features_on_key; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_flipper_features_on_key ON public.flipper_features USING btree (key);
+
+
+--
+-- Name: index_flipper_gates_on_feature_key_and_key_and_value; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX index_flipper_gates_on_feature_key_and_key_and_value ON public.flipper_gates USING btree (feature_key, key, value);
+
+
+--
+-- Name: index_impound_records_on_bike_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_impound_records_on_bike_id ON public.impound_records USING btree (bike_id);
+
+
+--
+-- Name: index_impound_records_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_impound_records_on_organization_id ON public.impound_records USING btree (organization_id);
+
+
+--
+-- Name: index_impound_records_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_impound_records_on_user_id ON public.impound_records USING btree (user_id);
 
 
 --
@@ -3235,6 +3787,13 @@ CREATE INDEX index_mail_snippets_on_organization_id ON public.mail_snippets USIN
 --
 
 CREATE INDEX index_memberships_on_organization_id ON public.memberships USING btree (organization_id);
+
+
+--
+-- Name: index_memberships_on_sender_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_memberships_on_sender_id ON public.memberships USING btree (sender_id);
 
 
 --
@@ -3301,13 +3860,6 @@ CREATE UNIQUE INDEX index_oauth_applications_on_uid ON public.oauth_applications
 
 
 --
--- Name: index_organization_invitations_on_organization_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_organization_invitations_on_organization_id ON public.organization_invitations USING btree (organization_id);
-
-
---
 -- Name: index_organization_messages_on_bike_id; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -3326,6 +3878,13 @@ CREATE INDEX index_organization_messages_on_organization_id ON public.organizati
 --
 
 CREATE INDEX index_organization_messages_on_sender_id ON public.organization_messages USING btree (sender_id);
+
+
+--
+-- Name: index_organizations_on_location_latitude_and_location_longitude; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_organizations_on_location_latitude_and_location_longitude ON public.organizations USING btree (location_latitude, location_longitude);
 
 
 --
@@ -3361,6 +3920,55 @@ CREATE INDEX index_ownerships_on_creator_id ON public.ownerships USING btree (cr
 --
 
 CREATE INDEX index_ownerships_on_user_id ON public.ownerships USING btree (user_id);
+
+
+--
+-- Name: index_parking_notifications_on_bike_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_parking_notifications_on_bike_id ON public.parking_notifications USING btree (bike_id);
+
+
+--
+-- Name: index_parking_notifications_on_country_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_parking_notifications_on_country_id ON public.parking_notifications USING btree (country_id);
+
+
+--
+-- Name: index_parking_notifications_on_impound_record_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_parking_notifications_on_impound_record_id ON public.parking_notifications USING btree (impound_record_id);
+
+
+--
+-- Name: index_parking_notifications_on_initial_record_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_parking_notifications_on_initial_record_id ON public.parking_notifications USING btree (initial_record_id);
+
+
+--
+-- Name: index_parking_notifications_on_organization_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_parking_notifications_on_organization_id ON public.parking_notifications USING btree (organization_id);
+
+
+--
+-- Name: index_parking_notifications_on_state_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_parking_notifications_on_state_id ON public.parking_notifications USING btree (state_id);
+
+
+--
+-- Name: index_parking_notifications_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_parking_notifications_on_user_id ON public.parking_notifications USING btree (user_id);
 
 
 --
@@ -3413,17 +4021,80 @@ CREATE INDEX index_stolen_records_on_latitude_and_longitude ON public.stolen_rec
 
 
 --
+-- Name: index_stolen_records_on_recovering_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_stolen_records_on_recovering_user_id ON public.stolen_records USING btree (recovering_user_id);
+
+
+--
+-- Name: index_theft_alerts_on_payment_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_theft_alerts_on_payment_id ON public.theft_alerts USING btree (payment_id);
+
+
+--
+-- Name: index_theft_alerts_on_stolen_record_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_theft_alerts_on_stolen_record_id ON public.theft_alerts USING btree (stolen_record_id);
+
+
+--
+-- Name: index_theft_alerts_on_theft_alert_plan_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_theft_alerts_on_theft_alert_plan_id ON public.theft_alerts USING btree (theft_alert_plan_id);
+
+
+--
+-- Name: index_theft_alerts_on_user_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_theft_alerts_on_user_id ON public.theft_alerts USING btree (user_id);
+
+
+--
+-- Name: index_tweets_on_original_tweet_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_tweets_on_original_tweet_id ON public.tweets USING btree (original_tweet_id);
+
+
+--
+-- Name: index_tweets_on_stolen_record_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_tweets_on_stolen_record_id ON public.tweets USING btree (stolen_record_id);
+
+
+--
+-- Name: index_tweets_on_twitter_account_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_tweets_on_twitter_account_id ON public.tweets USING btree (twitter_account_id);
+
+
+--
+-- Name: index_twitter_accounts_on_latitude_and_longitude; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_twitter_accounts_on_latitude_and_longitude ON public.twitter_accounts USING btree (latitude, longitude);
+
+
+--
+-- Name: index_twitter_accounts_on_screen_name; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_twitter_accounts_on_screen_name ON public.twitter_accounts USING btree (screen_name);
+
+
+--
 -- Name: index_user_emails_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_user_emails_on_user_id ON public.user_emails USING btree (user_id);
-
-
---
--- Name: index_users_on_bike_actions_organization_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_users_on_bike_actions_organization_id ON public.users USING btree (bike_actions_organization_id);
 
 
 --
@@ -3434,10 +4105,73 @@ CREATE INDEX index_users_on_password_reset_token ON public.users USING btree (pa
 
 
 --
+-- Name: unique_assignment_to_ambassador; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX unique_assignment_to_ambassador ON public.ambassador_task_assignments USING btree (user_id, ambassador_task_id);
+
+
+--
 -- Name: unique_schema_migrations; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX unique_schema_migrations ON public.schema_migrations USING btree (version);
+
+
+--
+-- Name: theft_alerts fk_rails_3c23dcdc45; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.theft_alerts
+    ADD CONSTRAINT fk_rails_3c23dcdc45 FOREIGN KEY (stolen_record_id) REFERENCES public.stolen_records(id) ON DELETE CASCADE;
+
+
+--
+-- Name: theft_alerts fk_rails_4d1dc73022; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.theft_alerts
+    ADD CONSTRAINT fk_rails_4d1dc73022 FOREIGN KEY (theft_alert_plan_id) REFERENCES public.theft_alert_plans(id) ON DELETE CASCADE;
+
+
+--
+-- Name: theft_alerts fk_rails_58c070cc66; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.theft_alerts
+    ADD CONSTRAINT fk_rails_58c070cc66 FOREIGN KEY (user_id) REFERENCES public.users(id);
+
+
+--
+-- Name: ambassador_task_assignments fk_rails_6c31316b38; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ambassador_task_assignments
+    ADD CONSTRAINT fk_rails_6c31316b38 FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
+
+
+--
+-- Name: theft_alerts fk_rails_6dac5d87d9; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.theft_alerts
+    ADD CONSTRAINT fk_rails_6dac5d87d9 FOREIGN KEY (payment_id) REFERENCES public.payments(id);
+
+
+--
+-- Name: alert_images fk_rails_95dc479c85; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.alert_images
+    ADD CONSTRAINT fk_rails_95dc479c85 FOREIGN KEY (stolen_record_id) REFERENCES public.stolen_records(id);
+
+
+--
+-- Name: ambassador_task_assignments fk_rails_d557be2cfa; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ambassador_task_assignments
+    ADD CONSTRAINT fk_rails_d557be2cfa FOREIGN KEY (ambassador_task_id) REFERENCES public.ambassador_tasks(id) ON DELETE CASCADE;
 
 
 --
@@ -3446,643 +4180,423 @@ CREATE UNIQUE INDEX unique_schema_migrations ON public.schema_migrations USING b
 
 SET search_path TO "$user", public;
 
-INSERT INTO schema_migrations (version) VALUES ('20120911182934');
+INSERT INTO "schema_migrations" (version) VALUES
+('20120911182934'),
+('20120911183639'),
+('20120911184407'),
+('20120911185927'),
+('20120911230801'),
+('20120912003857'),
+('20120913164701'),
+('20120914193704'),
+('20120914194950'),
+('20120914214119'),
+('20120914221204'),
+('20121010120352'),
+('20121012140221'),
+('20121028230353'),
+('20121029020401'),
+('20121029232446'),
+('20121030004253'),
+('20121031232916'),
+('20121031234103'),
+('20121101002812'),
+('20121101002951'),
+('20121102144757'),
+('20121103160512'),
+('20121103201904'),
+('20121107230721'),
+('20121108220013'),
+('20121111190041'),
+('20121114221424'),
+('20121114223945'),
+('20121117213635'),
+('20121122183150'),
+('20121124163916'),
+('20121216155454'),
+('20121218161337'),
+('20121218163801'),
+('20121218165048'),
+('20121218175444'),
+('20121218232923'),
+('20121223151926'),
+('20121223152831'),
+('20121223160807'),
+('20121223175254'),
+('20130111143823'),
+('20130111161224'),
+('20130111165852'),
+('20130111230539'),
+('20130116160029'),
+('20130120201311'),
+('20130125155810'),
+('20130126000921'),
+('20130126010711'),
+('20130128182738'),
+('20130128183512'),
+('20130206030035'),
+('20130210182811'),
+('20130210183940'),
+('20130210184643'),
+('20130212215600'),
+('20130213230159'),
+('20130214204648'),
+('20130214211116'),
+('20130214231224'),
+('20130217161855'),
+('20130217161945'),
+('20130217170709'),
+('20130220010120'),
+('20130225180109'),
+('20130225202426'),
+('20130225215129'),
+('20130226165427'),
+('20130226170115'),
+('20130226171603'),
+('20130227022823'),
+('20130308162717'),
+('20130312214622'),
+('20130312234622'),
+('20130314000516'),
+('20130314202232'),
+('20130314214024'),
+('20130314235254'),
+('20130315022544'),
+('20130318004611'),
+('20130329212736'),
+('20130403012755'),
+('20130420195053'),
+('20130422133115'),
+('20130422162415'),
+('20130422162432'),
+('20130422170303'),
+('20130424134913'),
+('20130424155646'),
+('20130424161125'),
+('20130424225341'),
+('20130506191950'),
+('20130506194218'),
+('20130507033150'),
+('20130508162206'),
+('20130509213617'),
+('20130510144825'),
+('20130510154536'),
+('20130510161119'),
+('20130510191228'),
+('20130511175952'),
+('20130511181304'),
+('20130511182611'),
+('20130515014438'),
+('20130515140718'),
+('20130515202608'),
+('20130517154952'),
+('20130522165237'),
+('20130524164449'),
+('20130604205407'),
+('20130607162957'),
+('20130613144600'),
+('20130613153522'),
+('20130619234253'),
+('20130621012516'),
+('20130628161112'),
+('20130629152453'),
+('20130629152508'),
+('20130629162208'),
+('20130629165920'),
+('20130629165929'),
+('20130629171337'),
+('20130629183647'),
+('20130629183656'),
+('20130630190556'),
+('20130709160337'),
+('20130709215543'),
+('20130711200929'),
+('20130711201434'),
+('20130711230226'),
+('20130714155827'),
+('20130716213553'),
+('20130717195126'),
+('20130718175528'),
+('20130724145302'),
+('20130725191328'),
+('20130729190352'),
+('20130729190514'),
+('20130729195607'),
+('20130802145610'),
+('20130807173218'),
+('20130807215021'),
+('20130809155956'),
+('20130820145312'),
+('20130820150839'),
+('20130820173657'),
+('20130821134559'),
+('20130821135549'),
+('20130821230157'),
+('20130903142657'),
+('20130905215302'),
+('20131009140156'),
+('20131013171704'),
+('20131013172625'),
+('20131013233351'),
+('20131018221510'),
+('20131029004416'),
+('20131029144536'),
+('20131030132116'),
+('20131030161105'),
+('20131031222251'),
+('20131101002019'),
+('20131105010837'),
+('20131117232341'),
+('20131202181502'),
+('20131204230644'),
+('20131205145316'),
+('20131211163130'),
+('20131212161639'),
+('20131213185845'),
+('20131216154423'),
+('20131218201839'),
+('20131219182417'),
+('20131221193910'),
+('20131227132337'),
+('20131227133553'),
+('20131227135813'),
+('20131227151833'),
+('20131229194508'),
+('20140103144654'),
+('20140103161433'),
+('20140103222943'),
+('20140103235111'),
+('20140104011352'),
+('20140105181220'),
+('20140106031356'),
+('20140108195016'),
+('20140108202025'),
+('20140108203313'),
+('20140109001625'),
+('20140111142521'),
+('20140111183125'),
+('20140112004042'),
+('20140113181408'),
+('20140114230221'),
+('20140115041923'),
+('20140116214759'),
+('20140116222529'),
+('20140122181025'),
+('20140122181308'),
+('20140204162239'),
+('20140225203114'),
+('20140227225103'),
+('20140301174242'),
+('20140312191710'),
+('20140313002428'),
+('20140426211337'),
+('20140504234957'),
+('20140507023948'),
+('20140510155037'),
+('20140510163446'),
+('20140523122545'),
+('20140524183616'),
+('20140525163552'),
+('20140525173416'),
+('20140525183759'),
+('20140526141810'),
+('20140526161223'),
+('20140614190845'),
+('20140615230212'),
+('20140621013108'),
+('20140621171727'),
+('20140629144444'),
+('20140629162651'),
+('20140629170842'),
+('20140706170329'),
+('20140713182107'),
+('20140720175226'),
+('20140809102725'),
+('20140817160101'),
+('20140830152248'),
+('20140902230041'),
+('20140903191321'),
+('20140907144150'),
+('20140916141534'),
+('20140916185511'),
+('20141006184444'),
+('20141008160942'),
+('20141010145930'),
+('20141025185722'),
+('20141026172449'),
+('20141030140601'),
+('20141031152955'),
+('20141105172149'),
+('20141110174307'),
+('20141210002148'),
+('20141210031732'),
+('20141210233551'),
+('20141217191826'),
+('20141217200937'),
+('20141224165646'),
+('20141231170329'),
+('20150111193842'),
+('20150111211009'),
+('20150122195921'),
+('20150123233624'),
+('20150127220842'),
+('20150208001048'),
+('20150321233527'),
+('20150325145515'),
+('20150402051334'),
+('20150507222158'),
+('20150518192613'),
+('20150701151619'),
+('20150805160333'),
+('20150903194549'),
+('20150916133842'),
+('20151122175408'),
+('20160314144745'),
+('20160317183354'),
+('20160320154610'),
+('20160406202125'),
+('20160425185052'),
+('20160509110049'),
+('20160509120017'),
+('20160529093040'),
+('20160614112308'),
+('20160629152210'),
+('20160630161603'),
+('20160630175602'),
+('20160631175602'),
+('20160711183247'),
+('20160714182030'),
+('20160808133129'),
+('20160813191639'),
+('20160901175004'),
+('20160910174549'),
+('20160910184053'),
+('20160913155615'),
+('20160923180542'),
+('20160923215650'),
+('20161222154603'),
+('20170227012150'),
+('20170503024611'),
+('20170617222902'),
+('20170618205609'),
+('20170731023746'),
+('20180225205617'),
+('20180624192035'),
+('20180624211320'),
+('20180624211323'),
+('20180706162137'),
+('20180730013343'),
+('20180731194240'),
+('20180801010129'),
+('20180801011704'),
+('20180801025713'),
+('20180802235809'),
+('20180803003635'),
+('20180804170624'),
+('20180806172125'),
+('20180813004404'),
+('20180813020849'),
+('20180813023344'),
+('20180818194244'),
+('20180911215238'),
+('20180918220604'),
+('20181130200131'),
+('20181204215943'),
+('20181205180633'),
+('20181213224936'),
+('20190110210704'),
+('20190201193608'),
+('20190201214042'),
+('20190206044915'),
+('20190208195902'),
+('20190214192448'),
+('20190301020053'),
+('20190306223523'),
+('20190306232544'),
+('20190307232718'),
+('20190308235449'),
+('20190309021455'),
+('20190312185621'),
+('20190314182139'),
+('20190315183047'),
+('20190315213846'),
+('20190317191821'),
+('20190327164432'),
+('20190329233031'),
+('20190401233010'),
+('20190402230848'),
+('20190422221408'),
+('20190424001657'),
+('20190514155447'),
+('20190516222221'),
+('20190517161246'),
+('20190517200357'),
+('20190524191139'),
+('20190529024835'),
+('20190606214539'),
+('20190607174104'),
+('20190611203612'),
+('20190611223723'),
+('20190612183532'),
+('20190614223136'),
+('20190617174200'),
+('20190617193251'),
+('20190617193255'),
+('20190620203854'),
+('20190621183811'),
+('20190624171627'),
+('20190625151428'),
+('20190703194554'),
+('20190705230020'),
+('20190708181605'),
+('20190709011902'),
+('20190710203715'),
+('20190710230727'),
+('20190725141309'),
+('20190725172835'),
+('20190726160009'),
+('20190726183859'),
+('20190806155914'),
+('20190806170520'),
+('20190806214815'),
+('20190809200257'),
+('20190809214414'),
+('20190829221522'),
+('20190903145420'),
+('20190904161424'),
+('20190909190050'),
+('20190913132047'),
+('20190916190441'),
+('20190916190442'),
+('20190916191514'),
+('20190918121951'),
+('20190918143646'),
+('20190919145324'),
+('20190923181352'),
+('20191010182940'),
+('20191018140618'),
+('20191022123037'),
+('20191022143755'),
+('20191028130015'),
+('20191106210313'),
+('20191108195338'),
+('20191117123105'),
+('20191209160937'),
+('20191216054404'),
+('20200101211426'),
+('20200107234030'),
+('20200108232256'),
+('20200109005657'),
+('20200128144317'),
+('20200130220100'),
+('20200131175543'),
+('20200210225544'),
+('20200210234925'),
+('20200212000416'),
+('20200212022845'),
+('20200212203304'),
+('20200311160107'),
+('20200324221906'),
+('20200326192650');
 
-INSERT INTO schema_migrations (version) VALUES ('20120911183639');
-
-INSERT INTO schema_migrations (version) VALUES ('20120911184407');
-
-INSERT INTO schema_migrations (version) VALUES ('20120911185927');
-
-INSERT INTO schema_migrations (version) VALUES ('20120911230801');
-
-INSERT INTO schema_migrations (version) VALUES ('20120912003857');
-
-INSERT INTO schema_migrations (version) VALUES ('20120913164701');
-
-INSERT INTO schema_migrations (version) VALUES ('20120914193704');
-
-INSERT INTO schema_migrations (version) VALUES ('20120914194950');
-
-INSERT INTO schema_migrations (version) VALUES ('20120914214119');
-
-INSERT INTO schema_migrations (version) VALUES ('20120914221204');
-
-INSERT INTO schema_migrations (version) VALUES ('20121010120352');
-
-INSERT INTO schema_migrations (version) VALUES ('20121012140221');
-
-INSERT INTO schema_migrations (version) VALUES ('20121028230353');
-
-INSERT INTO schema_migrations (version) VALUES ('20121029020401');
-
-INSERT INTO schema_migrations (version) VALUES ('20121029232446');
-
-INSERT INTO schema_migrations (version) VALUES ('20121030004253');
-
-INSERT INTO schema_migrations (version) VALUES ('20121031232916');
-
-INSERT INTO schema_migrations (version) VALUES ('20121031234103');
-
-INSERT INTO schema_migrations (version) VALUES ('20121101002812');
-
-INSERT INTO schema_migrations (version) VALUES ('20121101002951');
-
-INSERT INTO schema_migrations (version) VALUES ('20121102144757');
-
-INSERT INTO schema_migrations (version) VALUES ('20121103160512');
-
-INSERT INTO schema_migrations (version) VALUES ('20121103201904');
-
-INSERT INTO schema_migrations (version) VALUES ('20121107230721');
-
-INSERT INTO schema_migrations (version) VALUES ('20121108220013');
-
-INSERT INTO schema_migrations (version) VALUES ('20121111190041');
-
-INSERT INTO schema_migrations (version) VALUES ('20121114221424');
-
-INSERT INTO schema_migrations (version) VALUES ('20121114223945');
-
-INSERT INTO schema_migrations (version) VALUES ('20121117213635');
-
-INSERT INTO schema_migrations (version) VALUES ('20121122183150');
-
-INSERT INTO schema_migrations (version) VALUES ('20121124163916');
-
-INSERT INTO schema_migrations (version) VALUES ('20121216155454');
-
-INSERT INTO schema_migrations (version) VALUES ('20121218161337');
-
-INSERT INTO schema_migrations (version) VALUES ('20121218163801');
-
-INSERT INTO schema_migrations (version) VALUES ('20121218165048');
-
-INSERT INTO schema_migrations (version) VALUES ('20121218175444');
-
-INSERT INTO schema_migrations (version) VALUES ('20121218232923');
-
-INSERT INTO schema_migrations (version) VALUES ('20121223151926');
-
-INSERT INTO schema_migrations (version) VALUES ('20121223152831');
-
-INSERT INTO schema_migrations (version) VALUES ('20121223160807');
-
-INSERT INTO schema_migrations (version) VALUES ('20121223175254');
-
-INSERT INTO schema_migrations (version) VALUES ('20130111143823');
-
-INSERT INTO schema_migrations (version) VALUES ('20130111161224');
-
-INSERT INTO schema_migrations (version) VALUES ('20130111165852');
-
-INSERT INTO schema_migrations (version) VALUES ('20130111230539');
-
-INSERT INTO schema_migrations (version) VALUES ('20130116160029');
-
-INSERT INTO schema_migrations (version) VALUES ('20130120201311');
-
-INSERT INTO schema_migrations (version) VALUES ('20130125155810');
-
-INSERT INTO schema_migrations (version) VALUES ('20130126000921');
-
-INSERT INTO schema_migrations (version) VALUES ('20130126010711');
-
-INSERT INTO schema_migrations (version) VALUES ('20130128182738');
-
-INSERT INTO schema_migrations (version) VALUES ('20130128183512');
-
-INSERT INTO schema_migrations (version) VALUES ('20130206030035');
-
-INSERT INTO schema_migrations (version) VALUES ('20130210182811');
-
-INSERT INTO schema_migrations (version) VALUES ('20130210183940');
-
-INSERT INTO schema_migrations (version) VALUES ('20130210184643');
-
-INSERT INTO schema_migrations (version) VALUES ('20130212215600');
-
-INSERT INTO schema_migrations (version) VALUES ('20130213230159');
-
-INSERT INTO schema_migrations (version) VALUES ('20130214204648');
-
-INSERT INTO schema_migrations (version) VALUES ('20130214211116');
-
-INSERT INTO schema_migrations (version) VALUES ('20130214231224');
-
-INSERT INTO schema_migrations (version) VALUES ('20130217161855');
-
-INSERT INTO schema_migrations (version) VALUES ('20130217161945');
-
-INSERT INTO schema_migrations (version) VALUES ('20130217170709');
-
-INSERT INTO schema_migrations (version) VALUES ('20130220010120');
-
-INSERT INTO schema_migrations (version) VALUES ('20130225180109');
-
-INSERT INTO schema_migrations (version) VALUES ('20130225202426');
-
-INSERT INTO schema_migrations (version) VALUES ('20130225215129');
-
-INSERT INTO schema_migrations (version) VALUES ('20130226165427');
-
-INSERT INTO schema_migrations (version) VALUES ('20130226170115');
-
-INSERT INTO schema_migrations (version) VALUES ('20130226171603');
-
-INSERT INTO schema_migrations (version) VALUES ('20130227022823');
-
-INSERT INTO schema_migrations (version) VALUES ('20130308162717');
-
-INSERT INTO schema_migrations (version) VALUES ('20130312214622');
-
-INSERT INTO schema_migrations (version) VALUES ('20130312234622');
-
-INSERT INTO schema_migrations (version) VALUES ('20130314000516');
-
-INSERT INTO schema_migrations (version) VALUES ('20130314202232');
-
-INSERT INTO schema_migrations (version) VALUES ('20130314214024');
-
-INSERT INTO schema_migrations (version) VALUES ('20130314235254');
-
-INSERT INTO schema_migrations (version) VALUES ('20130315022544');
-
-INSERT INTO schema_migrations (version) VALUES ('20130318004611');
-
-INSERT INTO schema_migrations (version) VALUES ('20130329212736');
-
-INSERT INTO schema_migrations (version) VALUES ('20130403012755');
-
-INSERT INTO schema_migrations (version) VALUES ('20130420195053');
-
-INSERT INTO schema_migrations (version) VALUES ('20130422133115');
-
-INSERT INTO schema_migrations (version) VALUES ('20130422162415');
-
-INSERT INTO schema_migrations (version) VALUES ('20130422162432');
-
-INSERT INTO schema_migrations (version) VALUES ('20130422170303');
-
-INSERT INTO schema_migrations (version) VALUES ('20130424134913');
-
-INSERT INTO schema_migrations (version) VALUES ('20130424155646');
-
-INSERT INTO schema_migrations (version) VALUES ('20130424161125');
-
-INSERT INTO schema_migrations (version) VALUES ('20130424225341');
-
-INSERT INTO schema_migrations (version) VALUES ('20130506191950');
-
-INSERT INTO schema_migrations (version) VALUES ('20130506194218');
-
-INSERT INTO schema_migrations (version) VALUES ('20130507033150');
-
-INSERT INTO schema_migrations (version) VALUES ('20130508162206');
-
-INSERT INTO schema_migrations (version) VALUES ('20130509213617');
-
-INSERT INTO schema_migrations (version) VALUES ('20130510144825');
-
-INSERT INTO schema_migrations (version) VALUES ('20130510154536');
-
-INSERT INTO schema_migrations (version) VALUES ('20130510161119');
-
-INSERT INTO schema_migrations (version) VALUES ('20130510191228');
-
-INSERT INTO schema_migrations (version) VALUES ('20130511175952');
-
-INSERT INTO schema_migrations (version) VALUES ('20130511181304');
-
-INSERT INTO schema_migrations (version) VALUES ('20130511182611');
-
-INSERT INTO schema_migrations (version) VALUES ('20130515014438');
-
-INSERT INTO schema_migrations (version) VALUES ('20130515140718');
-
-INSERT INTO schema_migrations (version) VALUES ('20130515202608');
-
-INSERT INTO schema_migrations (version) VALUES ('20130517154952');
-
-INSERT INTO schema_migrations (version) VALUES ('20130522165237');
-
-INSERT INTO schema_migrations (version) VALUES ('20130524164449');
-
-INSERT INTO schema_migrations (version) VALUES ('20130604205407');
-
-INSERT INTO schema_migrations (version) VALUES ('20130607162957');
-
-INSERT INTO schema_migrations (version) VALUES ('20130613144600');
-
-INSERT INTO schema_migrations (version) VALUES ('20130613153522');
-
-INSERT INTO schema_migrations (version) VALUES ('20130619234253');
-
-INSERT INTO schema_migrations (version) VALUES ('20130621012516');
-
-INSERT INTO schema_migrations (version) VALUES ('20130628161112');
-
-INSERT INTO schema_migrations (version) VALUES ('20130629152453');
-
-INSERT INTO schema_migrations (version) VALUES ('20130629152508');
-
-INSERT INTO schema_migrations (version) VALUES ('20130629162208');
-
-INSERT INTO schema_migrations (version) VALUES ('20130629165920');
-
-INSERT INTO schema_migrations (version) VALUES ('20130629165929');
-
-INSERT INTO schema_migrations (version) VALUES ('20130629171337');
-
-INSERT INTO schema_migrations (version) VALUES ('20130629183647');
-
-INSERT INTO schema_migrations (version) VALUES ('20130629183656');
-
-INSERT INTO schema_migrations (version) VALUES ('20130630190556');
-
-INSERT INTO schema_migrations (version) VALUES ('20130709160337');
-
-INSERT INTO schema_migrations (version) VALUES ('20130709215543');
-
-INSERT INTO schema_migrations (version) VALUES ('20130711200929');
-
-INSERT INTO schema_migrations (version) VALUES ('20130711201434');
-
-INSERT INTO schema_migrations (version) VALUES ('20130711230226');
-
-INSERT INTO schema_migrations (version) VALUES ('20130714155827');
-
-INSERT INTO schema_migrations (version) VALUES ('20130716213553');
-
-INSERT INTO schema_migrations (version) VALUES ('20130717195126');
-
-INSERT INTO schema_migrations (version) VALUES ('20130718175528');
-
-INSERT INTO schema_migrations (version) VALUES ('20130724145302');
-
-INSERT INTO schema_migrations (version) VALUES ('20130725191328');
-
-INSERT INTO schema_migrations (version) VALUES ('20130729190352');
-
-INSERT INTO schema_migrations (version) VALUES ('20130729190514');
-
-INSERT INTO schema_migrations (version) VALUES ('20130729195607');
-
-INSERT INTO schema_migrations (version) VALUES ('20130802145610');
-
-INSERT INTO schema_migrations (version) VALUES ('20130807173218');
-
-INSERT INTO schema_migrations (version) VALUES ('20130807215021');
-
-INSERT INTO schema_migrations (version) VALUES ('20130809155956');
-
-INSERT INTO schema_migrations (version) VALUES ('20130820145312');
-
-INSERT INTO schema_migrations (version) VALUES ('20130820150839');
-
-INSERT INTO schema_migrations (version) VALUES ('20130820173657');
-
-INSERT INTO schema_migrations (version) VALUES ('20130821134559');
-
-INSERT INTO schema_migrations (version) VALUES ('20130821135549');
-
-INSERT INTO schema_migrations (version) VALUES ('20130821230157');
-
-INSERT INTO schema_migrations (version) VALUES ('20130903142657');
-
-INSERT INTO schema_migrations (version) VALUES ('20130905215302');
-
-INSERT INTO schema_migrations (version) VALUES ('20131009140156');
-
-INSERT INTO schema_migrations (version) VALUES ('20131013171704');
-
-INSERT INTO schema_migrations (version) VALUES ('20131013172625');
-
-INSERT INTO schema_migrations (version) VALUES ('20131013233351');
-
-INSERT INTO schema_migrations (version) VALUES ('20131018221510');
-
-INSERT INTO schema_migrations (version) VALUES ('20131029004416');
-
-INSERT INTO schema_migrations (version) VALUES ('20131029144536');
-
-INSERT INTO schema_migrations (version) VALUES ('20131030132116');
-
-INSERT INTO schema_migrations (version) VALUES ('20131030161105');
-
-INSERT INTO schema_migrations (version) VALUES ('20131031222251');
-
-INSERT INTO schema_migrations (version) VALUES ('20131101002019');
-
-INSERT INTO schema_migrations (version) VALUES ('20131105010837');
-
-INSERT INTO schema_migrations (version) VALUES ('20131117232341');
-
-INSERT INTO schema_migrations (version) VALUES ('20131202181502');
-
-INSERT INTO schema_migrations (version) VALUES ('20131204230644');
-
-INSERT INTO schema_migrations (version) VALUES ('20131205145316');
-
-INSERT INTO schema_migrations (version) VALUES ('20131211163130');
-
-INSERT INTO schema_migrations (version) VALUES ('20131212161639');
-
-INSERT INTO schema_migrations (version) VALUES ('20131213185845');
-
-INSERT INTO schema_migrations (version) VALUES ('20131216154423');
-
-INSERT INTO schema_migrations (version) VALUES ('20131218201839');
-
-INSERT INTO schema_migrations (version) VALUES ('20131219182417');
-
-INSERT INTO schema_migrations (version) VALUES ('20131221193910');
-
-INSERT INTO schema_migrations (version) VALUES ('20131227132337');
-
-INSERT INTO schema_migrations (version) VALUES ('20131227133553');
-
-INSERT INTO schema_migrations (version) VALUES ('20131227135813');
-
-INSERT INTO schema_migrations (version) VALUES ('20131227151833');
-
-INSERT INTO schema_migrations (version) VALUES ('20131229194508');
-
-INSERT INTO schema_migrations (version) VALUES ('20140103144654');
-
-INSERT INTO schema_migrations (version) VALUES ('20140103161433');
-
-INSERT INTO schema_migrations (version) VALUES ('20140103222943');
-
-INSERT INTO schema_migrations (version) VALUES ('20140103235111');
-
-INSERT INTO schema_migrations (version) VALUES ('20140104011352');
-
-INSERT INTO schema_migrations (version) VALUES ('20140105181220');
-
-INSERT INTO schema_migrations (version) VALUES ('20140106031356');
-
-INSERT INTO schema_migrations (version) VALUES ('20140108195016');
-
-INSERT INTO schema_migrations (version) VALUES ('20140108202025');
-
-INSERT INTO schema_migrations (version) VALUES ('20140108203313');
-
-INSERT INTO schema_migrations (version) VALUES ('20140109001625');
-
-INSERT INTO schema_migrations (version) VALUES ('20140111142521');
-
-INSERT INTO schema_migrations (version) VALUES ('20140111183125');
-
-INSERT INTO schema_migrations (version) VALUES ('20140112004042');
-
-INSERT INTO schema_migrations (version) VALUES ('20140113181408');
-
-INSERT INTO schema_migrations (version) VALUES ('20140114230221');
-
-INSERT INTO schema_migrations (version) VALUES ('20140115041923');
-
-INSERT INTO schema_migrations (version) VALUES ('20140116214759');
-
-INSERT INTO schema_migrations (version) VALUES ('20140116222529');
-
-INSERT INTO schema_migrations (version) VALUES ('20140122181025');
-
-INSERT INTO schema_migrations (version) VALUES ('20140122181308');
-
-INSERT INTO schema_migrations (version) VALUES ('20140204162239');
-
-INSERT INTO schema_migrations (version) VALUES ('20140225203114');
-
-INSERT INTO schema_migrations (version) VALUES ('20140227225103');
-
-INSERT INTO schema_migrations (version) VALUES ('20140301174242');
-
-INSERT INTO schema_migrations (version) VALUES ('20140312191710');
-
-INSERT INTO schema_migrations (version) VALUES ('20140313002428');
-
-INSERT INTO schema_migrations (version) VALUES ('20140426211337');
-
-INSERT INTO schema_migrations (version) VALUES ('20140504234957');
-
-INSERT INTO schema_migrations (version) VALUES ('20140507023948');
-
-INSERT INTO schema_migrations (version) VALUES ('20140510155037');
-
-INSERT INTO schema_migrations (version) VALUES ('20140510163446');
-
-INSERT INTO schema_migrations (version) VALUES ('20140523122545');
-
-INSERT INTO schema_migrations (version) VALUES ('20140524183616');
-
-INSERT INTO schema_migrations (version) VALUES ('20140525163552');
-
-INSERT INTO schema_migrations (version) VALUES ('20140525173416');
-
-INSERT INTO schema_migrations (version) VALUES ('20140525183759');
-
-INSERT INTO schema_migrations (version) VALUES ('20140526141810');
-
-INSERT INTO schema_migrations (version) VALUES ('20140526161223');
-
-INSERT INTO schema_migrations (version) VALUES ('20140614190845');
-
-INSERT INTO schema_migrations (version) VALUES ('20140615230212');
-
-INSERT INTO schema_migrations (version) VALUES ('20140621013108');
-
-INSERT INTO schema_migrations (version) VALUES ('20140621171727');
-
-INSERT INTO schema_migrations (version) VALUES ('20140629144444');
-
-INSERT INTO schema_migrations (version) VALUES ('20140629162651');
-
-INSERT INTO schema_migrations (version) VALUES ('20140629170842');
-
-INSERT INTO schema_migrations (version) VALUES ('20140706170329');
-
-INSERT INTO schema_migrations (version) VALUES ('20140713182107');
-
-INSERT INTO schema_migrations (version) VALUES ('20140720175226');
-
-INSERT INTO schema_migrations (version) VALUES ('20140809102725');
-
-INSERT INTO schema_migrations (version) VALUES ('20140817160101');
-
-INSERT INTO schema_migrations (version) VALUES ('20140830152248');
-
-INSERT INTO schema_migrations (version) VALUES ('20140902230041');
-
-INSERT INTO schema_migrations (version) VALUES ('20140903191321');
-
-INSERT INTO schema_migrations (version) VALUES ('20140907144150');
-
-INSERT INTO schema_migrations (version) VALUES ('20140916141534');
-
-INSERT INTO schema_migrations (version) VALUES ('20140916185511');
-
-INSERT INTO schema_migrations (version) VALUES ('20141006184444');
-
-INSERT INTO schema_migrations (version) VALUES ('20141008160942');
-
-INSERT INTO schema_migrations (version) VALUES ('20141010145930');
-
-INSERT INTO schema_migrations (version) VALUES ('20141025185722');
-
-INSERT INTO schema_migrations (version) VALUES ('20141026172449');
-
-INSERT INTO schema_migrations (version) VALUES ('20141030140601');
-
-INSERT INTO schema_migrations (version) VALUES ('20141031152955');
-
-INSERT INTO schema_migrations (version) VALUES ('20141105172149');
-
-INSERT INTO schema_migrations (version) VALUES ('20141110174307');
-
-INSERT INTO schema_migrations (version) VALUES ('20141210002148');
-
-INSERT INTO schema_migrations (version) VALUES ('20141210031732');
-
-INSERT INTO schema_migrations (version) VALUES ('20141210233551');
-
-INSERT INTO schema_migrations (version) VALUES ('20141217191826');
-
-INSERT INTO schema_migrations (version) VALUES ('20141217200937');
-
-INSERT INTO schema_migrations (version) VALUES ('20141224165646');
-
-INSERT INTO schema_migrations (version) VALUES ('20141231170329');
-
-INSERT INTO schema_migrations (version) VALUES ('20150111193842');
-
-INSERT INTO schema_migrations (version) VALUES ('20150111211009');
-
-INSERT INTO schema_migrations (version) VALUES ('20150122195921');
-
-INSERT INTO schema_migrations (version) VALUES ('20150123233624');
-
-INSERT INTO schema_migrations (version) VALUES ('20150127220842');
-
-INSERT INTO schema_migrations (version) VALUES ('20150208001048');
-
-INSERT INTO schema_migrations (version) VALUES ('20150321233527');
-
-INSERT INTO schema_migrations (version) VALUES ('20150325145515');
-
-INSERT INTO schema_migrations (version) VALUES ('20150402051334');
-
-INSERT INTO schema_migrations (version) VALUES ('20150507222158');
-
-INSERT INTO schema_migrations (version) VALUES ('20150518192613');
-
-INSERT INTO schema_migrations (version) VALUES ('20150701151619');
-
-INSERT INTO schema_migrations (version) VALUES ('20150805160333');
-
-INSERT INTO schema_migrations (version) VALUES ('20150903194549');
-
-INSERT INTO schema_migrations (version) VALUES ('20150916133842');
-
-INSERT INTO schema_migrations (version) VALUES ('20151122175408');
-
-INSERT INTO schema_migrations (version) VALUES ('20160314144745');
-
-INSERT INTO schema_migrations (version) VALUES ('20160317183354');
-
-INSERT INTO schema_migrations (version) VALUES ('20160320154610');
-
-INSERT INTO schema_migrations (version) VALUES ('20160406202125');
-
-INSERT INTO schema_migrations (version) VALUES ('20160425185052');
-
-INSERT INTO schema_migrations (version) VALUES ('20160509110049');
-
-INSERT INTO schema_migrations (version) VALUES ('20160509120017');
-
-INSERT INTO schema_migrations (version) VALUES ('20160529093040');
-
-INSERT INTO schema_migrations (version) VALUES ('20160614112308');
-
-INSERT INTO schema_migrations (version) VALUES ('20160629152210');
-
-INSERT INTO schema_migrations (version) VALUES ('20160630161603');
-
-INSERT INTO schema_migrations (version) VALUES ('20160630175602');
-
-INSERT INTO schema_migrations (version) VALUES ('20160631175602');
-
-INSERT INTO schema_migrations (version) VALUES ('20160711183247');
-
-INSERT INTO schema_migrations (version) VALUES ('20160714182030');
-
-INSERT INTO schema_migrations (version) VALUES ('20160808133129');
-
-INSERT INTO schema_migrations (version) VALUES ('20160813191639');
-
-INSERT INTO schema_migrations (version) VALUES ('20160901175004');
-
-INSERT INTO schema_migrations (version) VALUES ('20160910174549');
-
-INSERT INTO schema_migrations (version) VALUES ('20160910184053');
-
-INSERT INTO schema_migrations (version) VALUES ('20160913155615');
-
-INSERT INTO schema_migrations (version) VALUES ('20160923180542');
-
-INSERT INTO schema_migrations (version) VALUES ('20160923215650');
-
-INSERT INTO schema_migrations (version) VALUES ('20161222154603');
-
-INSERT INTO schema_migrations (version) VALUES ('20170227012150');
-
-INSERT INTO schema_migrations (version) VALUES ('20170503024611');
-
-INSERT INTO schema_migrations (version) VALUES ('20170617222902');
-
-INSERT INTO schema_migrations (version) VALUES ('20170618205609');
-
-INSERT INTO schema_migrations (version) VALUES ('20170731023746');
-
-INSERT INTO schema_migrations (version) VALUES ('20180225205617');
-
-INSERT INTO schema_migrations (version) VALUES ('20180624192035');
-
-INSERT INTO schema_migrations (version) VALUES ('20180624211320');
-
-INSERT INTO schema_migrations (version) VALUES ('20180624211323');
-
-INSERT INTO schema_migrations (version) VALUES ('20180706162137');
-
-INSERT INTO schema_migrations (version) VALUES ('20180730013343');
-
-INSERT INTO schema_migrations (version) VALUES ('20180731194240');
-
-INSERT INTO schema_migrations (version) VALUES ('20180801010129');
-
-INSERT INTO schema_migrations (version) VALUES ('20180801011704');
-
-INSERT INTO schema_migrations (version) VALUES ('20180801025713');
-
-INSERT INTO schema_migrations (version) VALUES ('20180802235809');
-
-INSERT INTO schema_migrations (version) VALUES ('20180803003635');
-
-INSERT INTO schema_migrations (version) VALUES ('20180804170624');
-
-INSERT INTO schema_migrations (version) VALUES ('20180806172125');
-
-INSERT INTO schema_migrations (version) VALUES ('20180813004404');
-
-INSERT INTO schema_migrations (version) VALUES ('20180813020849');
-
-INSERT INTO schema_migrations (version) VALUES ('20180813023344');
-
-INSERT INTO schema_migrations (version) VALUES ('20180818194244');
-
-INSERT INTO schema_migrations (version) VALUES ('20180911215238');
-
-INSERT INTO schema_migrations (version) VALUES ('20180918220604');
-
-INSERT INTO schema_migrations (version) VALUES ('20181130200131');
 

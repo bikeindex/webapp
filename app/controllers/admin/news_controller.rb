@@ -1,13 +1,13 @@
 class Admin::NewsController < Admin::BaseController
-  before_filter :find_blog, only: [:show, :edit, :update, :destroy]
-  before_filter :set_dignified_name
+  before_action :find_blog, only: [:show, :edit, :update, :destroy]
+  before_action :set_dignified_name
 
   def index
     @blogs = Blog.order("created_at asc")
   end
 
   def new
-    @blog = Blog.new(published_at: Time.now, user_id: current_user.id)
+    @blog = Blog.new(published_at: Time.current, user_id: current_user.id)
   end
 
   def image_edit
@@ -23,14 +23,13 @@ class Admin::NewsController < Admin::BaseController
   end
 
   def update
-    body = "blog"
-    title = params[:blog][:title]
-    body = params[:blog][:body]
-    if @blog.update_attributes(permitted_parameters)
+    if @blog.update(permitted_parameters)
       @blog.reload
+
       if @blog.listicles.present?
         @blog.listicles.pluck(:id).each { |id| ListicleImageSizeWorker.perform_in(1.minutes, id) }
       end
+
       flash[:success] = "Blog saved!"
       redirect_to edit_admin_news_url(@blog)
     else
@@ -43,8 +42,8 @@ class Admin::NewsController < Admin::BaseController
       title: params[:blog][:title],
       user_id: current_user.id,
       body: "No content yet, write some now!",
-      published_at: Time.now,
-      is_listicle: false
+      published_at: Time.current,
+      is_listicle: false,
     })
     if @blog.save
       flash[:success] = "Blog created!"
@@ -63,8 +62,27 @@ class Admin::NewsController < Admin::BaseController
   protected
 
   def permitted_parameters
-    params.require(:blog).permit(*%w(title body user_id published_at post_date post_now tags published old_title_slug
-       timezone description_abbr update_title is_listicle listicles_attributes user_email index_image_id index_image).map(&:to_sym).freeze)
+    params.require(:blog).permit(
+      :body,
+      :canonical_url,
+      :description_abbr,
+      :index_image,
+      :index_image_id,
+      :is_listicle,
+      :language,
+      :listicles_attributes,
+      :old_title_slug,
+      :post_date,
+      :post_now,
+      :published,
+      :published_at,
+      :tags,
+      :timezone,
+      :title,
+      :update_title,
+      :user_email,
+      :user_id,
+    )
   end
 
   def set_dignified_name
@@ -73,6 +91,6 @@ class Admin::NewsController < Admin::BaseController
   end
 
   def find_blog
-    @blog = Blog.find_by_title_slug(params[:id])
+    @blog = Blog.friendly_find(params[:id])
   end
 end

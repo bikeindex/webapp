@@ -1,6 +1,7 @@
 module Organized
   class ManageController < Organized::AdminController
-    before_filter :assign_organization, only: [:index, :update, :locations]
+    before_action :assign_organization, only: [:index, :update, :locations]
+
     def index
       @organization.ensure_auto_user
     end
@@ -10,33 +11,30 @@ module Organized
 
     def update
       if @organization.update_attributes(permitted_parameters)
-        flash[:success] = "#{current_organization.name} updated successfully"
+        flash[:success] = translation(:updated_successfully, org_name: current_organization.name)
         redirect_path = params[:locations_page] ? locations_organization_manage_index_path(organization_id: current_organization.to_param) : current_index_path
         redirect_to redirect_path
       else
         @page_errors = @organization.errors
-        flash[:error] = "We're sorry, we had trouble updating #{current_organization.name}"
+        flash[:error] = translation(:could_not_update, org_name: current_organization.name)
         render :index
       end
-    end
-
-    def dev
     end
 
     def destroy
       organization_name = current_organization.name
       if current_organization.is_paid
-        flash[:info] = "Please contact support@bikeindex.org to delete #{organization_name}"
+        flash[:info] = translation(:contact_support_to_delete, org_name: organization_name)
         redirect_to current_index_path and return
       end
-      notify_admins('organization_destroyed')
+      notify_admins("organization_destroyed")
       current_organization.destroy
-      flash[:info] = "Deleted #{organization_name}"
+      flash[:info] = translation(:deleted_org, org_name: organization_name)
       redirect_to user_root_url
     end
 
     def landing
-      render '/landing_pages/show'
+      render "/landing_pages/show"
     end
 
     private
@@ -50,9 +48,15 @@ module Organized
     end
 
     def permitted_parameters
-      params.require(:organization).permit(:name, :website, :org_type, show_on_map_if_permitted,
-                                           :embedable_user_email, paid_attributes,
+      params.require(:organization).permit(:name, :website, :embedable_user_email, :short_name,
+                                           show_on_map_if_permitted, permitted_kind, paid_attributes,
                                            locations_attributes: permitted_locations_params)
+    end
+
+    def permitted_kind
+      return "ambassador" if @organization.ambassador?
+      new_kind = params.dig(:organization, :kind)
+      Organization.user_creatable_kinds.include?(new_kind) ? new_kind : @organization.kind
     end
 
     def show_on_map_if_permitted

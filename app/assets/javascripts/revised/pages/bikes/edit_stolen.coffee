@@ -1,19 +1,23 @@
+# Runs on the following templates:
+# bikes/edit_report_recovered
+# bikes/edit_report_stolen
+
 class BikeIndex.BikesEditStolen extends BikeIndex
   constructor: ->
     @initializeEventListeners()
     if $('.stolenEditPage').length > 0
-      united_stated_id = $('#stolen_record_us_id').data('usid')
-      new BikeIndex.ToggleHiddenOther('.country-select-input', united_stated_id)
+      united_states_id = $('#us_id_data').data('usid')
+      new BikeIndex.ToggleHiddenOther('.country-select-input', united_states_id)
 
   initializeEventListeners: ->
     $('#mark-stolen-btn').click (e) =>
+      e.preventDefault()
       @markStolen(e)
     $('#toggle-stolen form').submit (e) =>
       e.preventDefault()
       @markRecovered()
 
   markStolen: (e) ->
-    e.preventDefault()
     $('#bike_stolen').val('true')
     window.pageScript.submitBikeEditForm()
 
@@ -21,7 +25,8 @@ class BikeIndex.BikesEditStolen extends BikeIndex
     if success
       msg = "Thanks for telling us! We're so glad you got your bike back!"
       $('#bike_stolen').prop('checked', '0')
-      window.BikeIndexAlerts.add('success', msg, window.location.reload())
+      redirect_url = window.location.href.replace(window.location.search, "")
+      window.BikeIndexAlerts.add('success', msg, () -> window.location.href = redirect_url)
     else
       msg = "Oh no! Something went wrong and we couldn't mark your bike recovered."
       window.BikeIndexAlerts.add('error', msg)

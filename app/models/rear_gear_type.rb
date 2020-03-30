@@ -1,4 +1,4 @@
-class RearGearType < ActiveRecord::Base
+class RearGearType < ApplicationRecord
   include FriendlySlugFindable
 
   validates_presence_of :name, :count
@@ -7,10 +7,6 @@ class RearGearType < ActiveRecord::Base
 
   scope :standard, -> { where(standard: true) }
   scope :internal, -> { where(internal: true) }
-
-  def self.old_attr_accessible
-    %w(name count internal standard).map(&:to_sym).freeze
-  end
 
   def self.fixed
     where(name: "Fixed", count: 1, internal: false).first_or_create

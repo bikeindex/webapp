@@ -1,23 +1,28 @@
-require "spec_helper"
+require "rails_helper"
 
-describe "Organized::MessagesController" do
-  include_context :geocoder_default_location
-  let(:organization) { FactoryGirl.create(:organization, is_paid: false, geolocated_emails: true) }
+RSpec.describe Organized::MessagesController, type: :request do
+  let(:organization) { FactoryBot.create(:organization_with_paid_features, enabled_feature_slugs: %w[messages geolocated_messages]) }
   let(:base_url) { "/o/#{organization.to_param}/messages" }
-  before { set_current_user(user, request_spec: true) if user.present? }
+
+  include_context :request_spec_logged_in_as_user
 
   describe "messages root" do
-    let(:user) { FactoryGirl.create(:organization_member, organization: organization) }
+    let(:current_user) { FactoryBot.create(:organization_member, organization: organization) }
+    it "renders" do
+      get base_url, params: json_headers
+      expect(response.status).to eq(200)
+      expect(response).to render_template(:index)
+    end
     context "json" do
       it "returns empty" do
-        get base_url, format: :json
+        get base_url, params: { format: :json }
         expect(response.status).to eq(200)
-        expect(JSON.parse(response.body)).to eq("messages" => [])
-        expect(response.headers['Access-Control-Allow-Origin']).not_to be_present
-        expect(response.headers['Access-Control-Request-Method']).not_to be_present
+        expect(json_result).to eq("messages" => [])
+        expect(response.headers["Access-Control-Allow-Origin"]).not_to be_present
+        expect(response.headers["Access-Control-Request-Method"]).not_to be_present
       end
       context "with a message" do
-        let!(:organization_message_1) { FactoryGirl.create(:organization_message, organization: organization, kind: "geolocated", created_at: Time.now - 1.hour) }
+        let!(:organization_message_1) { FactoryBot.create(:organization_message, organization: organization, kind: "geolocated", created_at: Time.current - 1.hour) }
         let(:bike) { organization_message_1.bike }
         let(:target) do
           {
@@ -29,36 +34,21 @@ describe "Organized::MessagesController" do
             sender_id: organization_message_1.sender_id,
             bike: {
               id: bike.id,
-              title: bike.title_string
-            }
+              title: bike.title_string,
+            },
           }
         end
         it "renders json, no cors present" do
-          get base_url, format: :json
+          expect(current_user.organizations.last.message_kinds).to be_present
+
+          get base_url, params: { format: :json }
+
           expect(response.status).to eq(200)
-          result = JSON.parse(response.body)["messages"]
-          expect(result.count).to eq 1
-          expect(result.first).to eq target.as_json
-          expect(response.headers['Access-Control-Allow-Origin']).not_to be_present
-          expect(response.headers['Access-Control-Request-Method']).not_to be_present
-        end
-        context "with parameters" do
-          let!(:organization_message_2) do
-            FactoryGirl.create(:organization_message,
-                               organization: organization,
-                               kind: "geolocated",
-                               created_at: Time.now - 1.day,
-                               bike: bike)
-          end
-          it "returns the matches" do
-            get "#{base_url}?per_page=1&page=1", format: :json
-            expect(response.status).to eq(200)
-            result = JSON.parse(response.body)["messages"]
-            expect(result.count).to eq 1
-            expect(result.first).to eq target.as_json
-            expect(response.header["Total"]).to eq("2")
-            expect(response.header["link"]).to match(/#{base_url}/)
-          end
+          messages = json_result["messages"]
+          expect(messages.count).to eq 1
+          expect(messages.first).to eq target.as_json
+          expect(response.headers["Access-Control-Allow-Origin"]).not_to be_present
+          expect(response.headers["Access-Control-Request-Method"]).not_to be_present
         end
       end
     end

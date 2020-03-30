@@ -1,68 +1,123 @@
-$primary-footer-top-margin: 6*$vertical-height; // Because sometimes we cover this up other places
+$primary-footer-top-margin: 6 * $vertical-height;
+
+// Because sometimes we cover this up other places
 .primary-footer {
   margin-top: $primary-footer-top-margin;
-  .primary-footer-nav, .terms-and-stuff {
-    padding: 3*$vertical-height 0;
+
+  .primary-footer-nav,
+  .terms-and-stuff {
+    padding: (3 * $vertical-height) 0;
   }
+
   a {
     text-decoration: none;
-    &:hover, &:active, &.active { text-decoration: underline; }
+
+    &:hover,
+    &:active,
+    &.active {
+      text-decoration: underline;
+    }
   }
-  .primary-footer-nav h4 a, .terms-and-stuff a {
+
+  .primary-footer-nav h4 a,
+  .terms-and-stuff a {
     color: $blue-light;
-    &:hover, &:active, &.active { color: $blue-light; }
+
+    &:hover,
+    &:active,
+    &.active {
+      color: $blue-light;
+    }
   }
+
+  .locale-form {
+    font-size: 12px;
+
+    label {
+      margin-right: 5px;
+    }
+  }
+
   .primary-footer-nav {
     background: $gray-dark;
-    a { color: $gray-light; }
-    h4 { 
-      margin-bottom: 0.5*$vertical-height;
-      font-size: 15px;
+
+    a {
+      color: $gray-light;
     }
+
+    h4 {
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: .5 * $vertical-height;
+    }
+
     ul {
       @include list-unstyled;
+
+      font-size: 12px;
       margin: 0;
     }
+
     .social-nav {
       text-align: center;
+
       li {
         display: block;
         float: left;
         width: 33.33%;
       }
-      svg {
-        display: inline-block;
-        max-height: 4*$vertical-height;
-      }
-      .svgpath { 
-        fill: $gray-light;
-        transition: color .05s linear;
-      }
+
       a {
         display: block;
         position: relative;
-        &:hover, &:active {
-          .svgpath { fill: lighten($gray-light, 15%); }
+
+        &:hover,
+        &:active {
+          .fab {
+            color: lighten($gray-light, 15%);
+          }
         }
       }
     }
   }
+
   .terms-and-stuff {
     background: $black-off;
     color: $gray-light;
-    text-align: center;
+    text-align: right;
+
     p {
-      margin: 0;
+      color: $gray-light;
       font-size: 12px;
+      line-height: 1.5;
+      margin: 0;
       padding: 0;
+
     }
   }
 }
 
-// 
+.footnotes {
+  padding-top: 2 * $vertical-height;
+  margin-top: 3 * $vertical-height;
+  border-top: $gray-lighter 1px solid;
+}
+
+//
+// Large Screen Styles
+@media (max-width: $grid-breakpoint-lg - 1px) and (min-width: $grid-breakpoint-md) {
+  .social-nav {
+    li {
+      margin: auto 10px;
+    }
+  }
+}
+
+//
 // Small Screen Styles
 @media (max-width: $grid-breakpoint-lg - 1px) {
   .primary-footer-nav nav {
-    margin-top: 3.5*$vertical-height;
+    margin-top: 3.5 * $vertical-height;
   }
 }

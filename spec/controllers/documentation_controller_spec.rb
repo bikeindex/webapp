@@ -1,51 +1,40 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe DocumentationController do
-  describe 'index' do
-    it 'redirects to current api documentation' do
+RSpec.describe DocumentationController, type: :controller do
+  describe "index" do
+    it "redirects to current api documentation" do
       get :index
-      expect(response).to redirect_to('/documentation/api_v3')
+      expect(response).to redirect_to("/documentation/api_v3")
       expect(flash).to_not be_present
     end
   end
 
-  describe 'api_v1' do
-    context 'developer user' do
-      it 'renders' do
-        user = FactoryGirl.create(:developer)
-        set_current_user(user)
-        FactoryGirl.create(:organization, name: 'Example organization') # Required because I'm an idiot
-        get :api_v1
-        expect(response.code).to eq('200')
-        expect(response).to render_template('api_v1')
-        expect(flash).to_not be_present
-      end
-    end
-    context 'user' do
-      it 'redirects to home, message API deprecated' do
-        user = FactoryGirl.create(:user)
-        set_current_user(user)
-        get :api_v1
-        expect(response).to redirect_to documentation_index_path
-        expect(flash[:notice]).to match 'deprecated'
-      end
+  describe "authorize" do
+    include_context :existing_doorkeeper_app
+    let!(:access_grant) { doorkeeper_app.access_grants.create!(resource_owner_id: user.id, redirect_uri: "*", expires_in: 10.minutes) }
+    it "renders" do
+      set_current_user(user)
+      get :authorize, params: { code: access_grant.token }
+      expect(assigns(:application)).to eq doorkeeper_app
+      expect(response.code).to eq("200")
+      expect(response).to render_template("authorize")
     end
   end
 
-  describe 'api_v2' do
-    it 'renders' do
+  describe "api_v2" do
+    it "renders" do
       get :api_v2
-      expect(response.code).to eq('200')
-      expect(response).to render_template('api_v2')
+      expect(response.code).to eq("200")
+      expect(response).to render_template("api_v2")
       expect(flash).to_not be_present
     end
   end
 
-  describe 'api_v3' do
-    it 'renders' do
+  describe "api_v3" do
+    it "renders" do
       get :api_v3
-      expect(response.code).to eq('200')
-      expect(response).to render_template('api_v3')
+      expect(response.code).to eq("200")
+      expect(response).to render_template("api_v3")
       expect(flash).to_not be_present
     end
   end

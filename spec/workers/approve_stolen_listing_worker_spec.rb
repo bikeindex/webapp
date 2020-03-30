@@ -1,16 +1,33 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe ApproveStolenListingWorker do
-  it { is_expected.to be_processed_in :notify }
-
-  it 'enqueues another awesome job' do
-    bike = FactoryGirl.create(:bike)
+RSpec.describe ApproveStolenListingWorker, type: :job, vcr: true do
+  it "enqueues another awesome job" do
+    bike = FactoryBot.create(:bike)
     ApproveStolenListingWorker.perform_async(bike.id)
     expect(ApproveStolenListingWorker).to have_enqueued_sidekiq_job(bike.id)
   end
 
-  it 'calls stolen twitterbot integration' do
-    expect_any_instance_of(StolenTwitterbotIntegration).to receive(:send_tweet).with(111)
-    ApproveStolenListingWorker.new.perform(111)
+  context "given a bike with no current stolen record" do
+    it "raises ArgumentError" do
+      bike = FactoryBot.create(:bike)
+      job = -> { ApproveStolenListingWorker.new.perform(bike.id) }
+      expect { job.call }.to raise_error(ArgumentError)
+    end
+  end
+
+  context "given no twitter client" do
+    it "raises ArgumentError" do
+      bike = FactoryBot.create(:stolen_bike)
+      job = -> { ApproveStolenListingWorker.new.perform(bike.id) }
+      expect { job.call }.to raise_error(ArgumentError)
+    end
+  end
+
+  context "given a bike with a current stolen record and a nearby twitter account" do
+    it "creates twitter stolen bike alert" do
+      FactoryBot.create(:twitter_account_1, :active)
+      bike = FactoryBot.create(:stolen_bike)
+      ApproveStolenListingWorker.new.perform(bike.id)
+    end
   end
 end

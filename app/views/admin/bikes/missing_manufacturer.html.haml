@@ -1,27 +1,42 @@
+.admin-subnav
+  .col-md-6
+    %h1
+      Multi manufacturer update
+  .col-md-6
+    %ul
+      %li.nav-item
+        = link_to "all bikes", admin_bikes_path, class: "nav-link"
+      %li.nav-item
+        = link_to "Alphabetical view", missing_manufacturer_admin_bikes_path(reset_view: true), class: !session[:missing_manufacturer_time_order] ? "nav-link active" : "nav-link"
+      %li.nav-item
+        = link_to "Time ordered view", missing_manufacturer_admin_bikes_path(time_ordered: true), class: session[:missing_manufacturer_time_order] ? "nav-link active" : "nav-link"
 
-%header.with-subtitle
-  %h1
-    Multi manufacturer update
-  .sharing-links
-    %label.checkbox.disabled
-      = check_box_tag :time_ordered, 'time_ordered', session[:missing_manufacturer_time_order]
-      time ordered
-      
-
+.row.mb-4
+  .col-md-8
+    %p
+      %strong
+        = number_with_delimiter(@bikes.total_count)
+      matching
+      = "bike".pluralize(@bikes)
+  .col-md-4
+    = form_tag missing_manufacturer_admin_bikes_path, method: :get, class: "form-inline" do
+      .form-group.ml-auto.mr-2
+        = text_field_tag :search_other_name, params[:search_other_name], placeholder: "Search Other mnfg", class: "form-control"
+        = submit_tag "Search", name: "search", class: "btn btn-primary ml-2"
 = form_tag update_manufacturers_admin_bikes_path, id: 'multi_bike_manufacturer_update' do
-  .row-fluid.multi-bike-manufacturer-form
-    #chosen-container.span4.multi-manufacturer-selector
-      .chosen-select
-        = select_tag :manufacturer_id, options_from_collection_for_select(Manufacturer.frames, :id, :name), prompt: "Choose manufacturer"
-
-      = submit_tag 'Update selected', class: 'button-blue'
-    .span8.paginate-container
-      = paginate @bikes
-  %section.full-screen-table
-    %table.table.table-striped.table-bordered
-      %thead
+  .row
+    .col-md-4
+      .fancy-select.unfancy
+        = select_tag :manufacturer_id, options_from_collection_for_select(Manufacturer.frame_makers, :id, :name), prompt: "Choose manufacturer"
+    .col-md-2
+      = submit_tag 'Update selected', class: 'btn btn-primary'
+  = paginate @bikes, views_prefix: "admin"
+  .full-screen-table.mt-4
+    %table.table.table-striped.table-bordered.table-sm
+      %thead.thead-light
         %th.table-cell-check
-          &#x2713;
+          %a#multi-mnfg-selector{ href: "#" }
+            = check_mark
         %th
           Date indexed
         %th
@@ -34,33 +49,25 @@
       %tbody
         - @bikes.each do |bike|
           %tr
-            %td
+            %td.table-cell-check.update-mnfg-select
               = check_box_tag "bikes_selected[#{bike.id}]", bike.id
             %td
               .less-strong-hold
-                %span.less-strong-right.medium-screens
+                %a.convertTime{ href: edit_admin_bike_url(bike) }
+                  = l bike.created_at, format: :convert_time
+                %span.less-strong-right
                   - if bike.example
                     %span.table-error
                       = bike.id
                   - else
                     = bike.id
-              %a{href: edit_admin_bike_url(bike) }
-
-                - if bike.created_at.today?
-                  Today at #{bike.created_at.strftime("%-I %p")}
-                - elsif Date.yesterday().beginning_of_day() <= bike.created_at
-                  Yesterday at #{bike.created_at.strftime("%-I %p")}
-                - else
-                  = bike.created_at.strftime("%-m.%-d.%Y")
 
             %td
               - if bike.manufacturer_other.present?
-                %span.table-error
-                  %span.hidden
-                    0 1
-                  = bike.manufacturer_other
+                = bike.manufacturer_other
               - else
-                = bike.mnfg_name
+                %em.less-strong
+                  = bike.mnfg_name
             %td
               .less-strong-hold
                 - desc = ''
@@ -69,19 +76,19 @@
                 - desc += "(#{bike.type})" unless bike.type == 'bike'
                 = desc
                 - if bike.paint.present? && bike.paint.color_id.blank?
-                  .large-screens.less-strong
+                  .less-strong
                     = link_to bike.paint.name, edit_admin_paint_url(bike.paint)
                     = bike.frame_colors.to_sentence
                 - if bike.stolen
                   %span.less-strong-right
                     stolen
 
-            %td.not-tiny-screens
+            %td
               .less-strong-hold
                 = bike.creation_organization.name if bike.creation_organization.present?
                 - if bike.registered_new
                   %span.less-strong-right
                     pos
 
-  .paginate-container
-    = paginate @bikes
+
+  = paginate @bikes, views_prefix: "admin"

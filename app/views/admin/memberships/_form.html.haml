@@ -1,41 +1,32 @@
-.form.form-horizontal#chosen-container
-  = form_for [:admin, @membership] do |f|
-    - if @membership.errors.any?
-      #alert-block
-        .alert.alert-error
-          %h4
-            Please fix the following 
-            = pluralize(@membership.errors.count, "error")
-          %ul
-            - @membership.errors.full_messages.each do |msg|
-              %li
-                = msg
-    %h3
-      User membership
-    .control-group.padded.chosen-select
-      %label.control-label
-        Organization
-      .controls
-        = collection_select( :membership, :organization_id, @organizations, :id, :name, :required =>true )
-        
-        
-    .control-group.chosen-select
-      %label.control-label
-        User email
-      .controls
-        = f.text_field :invited_email
-        / # = collection_select( :membership, :user_id, @users, :id, :email, :required =>true, prompt: "Choose a user")
-    
-    .control-group
-      = f.label :role, class: "control-label"
-      .controls.radio-controls
-        %label.radio
-          = f.radio_button :role, "admin"
-          Admin of organization
-        %label.radio
-          = f.radio_button :role, "member"
-          Member of organization
-        
+.card
+  .card-body
+    - if @membership.id.present?
+      %h4.text-danger.mb-4
+        DANGER! Don't edit
+        %em
+          %br
+          It would be better to delete and re-add
+    = form_for [:admin, @membership] do |f|
+      - if @membership.errors.any?
+        = render partial: "/shared/errors", locals: { name: "Membership", obj: @membership }
+      .form-group.fancy-select.unfancy
+        = f.label :organization
+        = collection_select :membership, :organization_id, @organizations, :id, :name, { include_blank: "Please select an organization" }, required: true,  class: "form-control"
 
-    .control-group.actions
-      = f.submit 'Save', class: 'button-green'
+      .form-group
+        = f.label :invited_email
+        = f.text_field :invited_email, required: true, class: "form-control"
+
+      .form-group
+        %label
+          Role
+        .form-check
+          %label
+            = f.radio_button :role, "admin", class: "form-check-input"
+            Admin of organization
+        .form-check
+          %label
+            = f.radio_button :role, "member", class: "form-check-input"
+            Member of organization
+
+      = f.submit 'Save', class: 'btn btn-success'

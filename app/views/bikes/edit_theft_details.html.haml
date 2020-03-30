@@ -1,0 +1,133 @@
+= form_for @bike, multipart: true, html: { class: 'primary-edit-bike-form stolenEditPage' } do |f|
+  = f.hidden_field :stolen
+
+  .form-well-container.container{ class: "edit-bike-page-#{@edit_template}" }
+    .row
+      = render partial: 'bikes/edit_primary_menu'
+
+      .col-md-8.form-well#form_well_wrap
+        - if @bike.current_stolen_record&.display_checklist?
+          .form-wrap.stolen-checklist-wrap
+            .form-well-form-header-always-visible
+              %h3.header-font-alt
+                = t(".do_these_things_for_the_best_chance")
+            = render partial: "bikes/stolen_checklist", locals: { stolen_record: @bike.current_stolen_record }
+
+        .form-wrap{ class: @bike.current_stolen_record&.display_checklist? ? "secondary-form-wrap" : "" }
+          .form-well-form-header
+            -# Theft Details
+            %h3= @edit_templates[@edit_template]
+
+          -# Helper text display
+          - stolen_type = @bike.abandoned ? t(".abandoned") : t(".stolen")
+          = f.fields_for :stolen_records do |srecord|
+            - next unless srecord.object.current # Because they may have multiple stolen records
+
+            %h3
+            .form-group.row.unnested-field
+              = srecord.hidden_field :timezone, value: "", class: "hiddenFieldTimezone"
+              = srecord.label :date_stolen, t(".when_was_it_stolen", stolen_type: stolen_type), class: 'form-well-label'
+              .form-well-input
+                - srecord.object.date_stolen = TimeParser.round(srecord.object.date_stolen || Time.current)
+                = srecord.datetime_local_field :date_stolen, max: Time.current + 1.day, step: 60, required: true, class: 'form-control dateInputUpdateZone', "data-initialtime" => l(srecord.object.date_stolen, format: :convert_time)
+
+            -# Add an ID to this element because we want to link to the specific location
+            .form-group.row.unnested-field#where-theft-happened
+              = srecord.label :phone, class: 'form-well-label'
+              .form-well-input
+                = srecord.text_field :phone, class: 'form-control'
+
+            .form-group.row.unnested-field
+              = srecord.label :secondary_phone, class: 'form-well-label'
+              .form-well-input
+                = srecord.text_field :secondary_phone, class: 'form-control'
+
+            = render partial: 'bikes/bike_fields/stolen_location', locals: { srecord: srecord, stolen_type: stolen_type }
+
+            .form-group.row.unnested-field
+              = srecord.label :estimated_value, class: 'form-well-label'
+              .form-well-input.input-group{ style: 'max-height: 2.5rem;'}
+                .input-group-addon
+                  = t("number.currency.format.unit")
+                = srecord.number_field :estimated_value, min: '1', class: 'form-control'
+
+            - unless @bike.abandoned?
+              .form-group.row.unnested-field.fancy-select-placeholder.unfancy
+                = srecord.label :locking_description, class:  'form-well-label'
+                .form-well-input
+                  = srecord.select(:locking_description, StolenRecord.locking_description_select_options, prompt: '')
+              .form-group.row.unnested-field.fancy-select-placeholder.unfancy
+                = srecord.label :lock_defeat_description, class:  'form-well-label'
+                .form-well-input
+                  = srecord.select(:lock_defeat_description, StolenRecord.locking_defeat_description_select_options, prompt: '')
+
+            .form-group.row.unnested-field
+              - description_label = @bike.abandoned ? t(".how_did_you_recover", bike_type: @bike.type) : t(".description_of_the_incident")
+
+              = srecord.label :theft_description, description_label, class:  'form-well-label'
+              .form-well-input-large
+                = srecord.text_area :theft_description, rows: 3, class: 'form-control'
+
+            .form-group.row.unnested-field
+              = srecord.label :police_report_number, t(".police_report"), class: 'form-well-label'
+              .form-well-input
+                = srecord.text_field :police_report_number, class: 'form-control'
+                %span.below-input-help
+                  = t(".without_a_valid_report_number_html")
+            .form-group.row.unnested-field.no-divider-row
+              = srecord.label :police_report_department, t(".department_city"), class: 'form-well-label'
+              .form-well-input
+                = srecord.text_field :police_report_department, class: 'form-control'
+
+            %hr
+            .form-group.row.unnested-field.full-width-section.no-divider-row
+              %label
+                = srecord.check_box :proof_of_ownership
+                = t(".do_you_have_proof_of_ownership", bike_type: @bike.type)
+              .full-width-checkbox-help
+                = t(".if_this_bike_type_was_added", bike_type: @bike.type)
+            %hr
+            .form-group.row.unnested-field.full-width-section.no-divider-row
+              %label
+                = srecord.check_box :receive_notifications
+                = t(".receive_notifications", bike_type: @bike.type)
+              .full-width-checkbox-help
+                = t(".eg_if_we_tweet_about_it")
+
+            = render "shared/form_well_footer_save"
+
+-# "Try a Promoted Theft Alert" modal
+
+- stolen_record_id = @bike&.current_stolen_record&.id
+- session_key = "promoted_theft_alert_modal_#{stolen_record_id}_seen"
+- if session[session_key].blank?
+  - session[session_key] = true
+  - modal_title = t(".promoted_theft_alerts")
+  - modal_body = capture_haml do
+    .modal-body
+      %p
+        = t(".we_can_create_fb_ads_for_you")
+
+      .mb-4.text-center
+        = image_tag "promoted_alerts/sample.jpg",
+          alt: "Sample Promoted Alert Image",
+          class: "m-auto mw-100"
+
+      %p
+        = t(".promoted_theft_alert_service_description")
+
+      %p
+        - blog_post_link = link_to t(".here"),
+          news_url("bike-indexs-new-promoted-alerts-are-the-megaphone-crooks-dont-want-you"),
+          target: :_blank
+        = t(".click_to_see_promoted_alert_blog_post_html", link: blog_post_link)
+
+      %p
+        = t(".charges_go_to_cost_of_ad")
+
+      %p.text-center
+        = link_to t(".try_one_now"),
+          edit_bike_path(@bike, params: { page: :alert }),
+          class: "btn btn-md btn-primary"
+
+  = render partial: "/shared/modal", locals: { title: modal_title, id: "tryAPromotedAlert", modal_body: modal_body, start_open: true }

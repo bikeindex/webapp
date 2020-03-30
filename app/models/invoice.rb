@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # daily_maintenance_tasks updates all invoices that have expiring subscriptions every day
-class Invoice < ActiveRecord::Base
+class Invoice < ApplicationRecord
   include Amountable # included for formatting stuff
   belongs_to :organization
   belongs_to :first_invoice, class_name: "Invoice" # Use subscription_first_invoice_id + subscription_first_invoice, NOT THIS
@@ -10,41 +10,52 @@ class Invoice < ActiveRecord::Base
   has_many :paid_features, through: :invoice_paid_features
   has_many :payments
 
-  validates_presence_of :organization_id
+  validates :organization, :currency, presence: true
 
   before_save :set_calculated_attributes
   after_commit :update_organization
 
   scope :first_invoice, -> { where(first_invoice_id: nil) }
   scope :renewal_invoice, -> { where.not(first_invoice_id: nil) }
-  scope :active, -> { where(is_active: true).where.not(subscription_start_at: nil) }
-  scope :current, -> { active.where("subscription_end_at > ?", Time.now) }
-  scope :expired, -> { active.where("subscription_end_at < ?", Time.now) }
+  scope :active, -> { where(is_active: true) }
+  scope :inactive, -> { where(is_active: false) }
+  scope :current, -> { active.where("subscription_end_at > ?", Time.current) }
+  scope :expired, -> { where.not(subscription_start_at: nil).where("subscription_end_at < ?", Time.current) }
+  scope :should_expire, -> { where(is_active: true).where("subscription_end_at < ?", Time.current) }
+
+  attr_accessor :timezone
 
   def self.friendly_find(str)
     str = str[/\d+/] if str.is_a?(String)
     where(id: str).first
   end
 
+  def self.feature_slugs
+    includes(:paid_features).pluck(:feature_slugs).flatten.uniq
+  end
+
   def subscription_duration; 1.year end # Static, at least for now
   def renewal_invoice?; first_invoice_id.present? end
-  def active?; is_active && subscription_start_at.present? end # Alias - don't directly access the db attribute, because it might change
+  def active?; is_active end # Alias - don't directly access the db attribute, because it might change
   def was_active?; expired? && force_active || subscription_start_at.present? && paid_in_full? end
-  def current?; active? && subscription_end_at > Time.now end
-  def expired?; subscription_end_at && subscription_end_at < Time.now end
+  def current?; active? && subscription_end_at > Time.current end
+  def expired?; subscription_end_at && subscription_end_at < Time.current end
+  def should_expire?; is_active && expired? end # Use db attribute here, because that's what matters
   def discount_cents; feature_cost_cents - (amount_due_cents || 0) end
   def paid_in_full?; amount_paid_cents.present? && amount_due_cents.present? && amount_paid_cents >= amount_due_cents end
   def subscription_first_invoice_id; first_invoice_id || id end
   def subscription_first_invoice; first_invoice || self end
   def subscription_invoices; self.class.where(first_invoice_id: subscription_first_invoice_id).where.not(id: id) end
   def display_name; "Invoice ##{id}" end
+  def start_at; subscription_start_at end
+  def start_at; subscription_end_at end
 
   def paid_feature_ids; invoice_paid_features.pluck(:paid_feature_id) end
 
   # There can be multiple features of the same id. View the spec for additional info
   def paid_feature_ids=(val) # This isn't super efficient, but whateves
     val = val.to_s.split(",") unless val.is_a?(Array)
-    new_features = val.map { |v| PaidFeature.friendly_find(v) }.compact
+    new_features = val.map { |v| PaidFeature.where(id: v).first }.compact
     new_feature_ids = new_features.map(&:id)
     existing_feature_ids = invoice_paid_features.pluck(:paid_feature_id)
     (existing_feature_ids - new_feature_ids).uniq.each do |absent_id| # ids absent from new features
@@ -65,6 +76,29 @@ class Invoice < ActiveRecord::Base
     end
   end
 
+  def child_enabled_feature_slugs_string; (child_enabled_feature_slugs || []).join(", ") end
+
+  def child_enabled_feature_slugs_string=(val)
+    return true if val.blank?
+    unless val.is_a?(Array)
+      val = val.strip.split(",").map(&:strip)
+    end
+    valid_slugs = (val & feature_slugs)
+    self.child_enabled_feature_slugs = valid_slugs
+  end
+
+  # So that we can read and write
+  def start_at; subscription_start_at end
+  def end_at; subscription_end_at end
+
+  def start_at=(val)
+    self.subscription_start_at = TimeParser.parse(val, timezone)
+  end
+
+  def end_at=(val)
+    self.subscription_end_at = TimeParser.parse(val, timezone)
+  end
+
   def amount_due
     amnt = (amount_due_cents.to_i / 100.00)
     amnt % 1 != 0 ? amnt : amnt.round
@@ -75,15 +109,15 @@ class Invoice < ActiveRecord::Base
   end
 
   def amount_due_formatted
-    money_formatted(amount_due_cents)
+    self.class.money_formatted(amount_due_cents, currency)
   end
 
   def amount_paid_formatted
-    money_formatted(amount_paid_cents)
+    self.class.money_formatted(amount_paid_cents, currency)
   end
 
   def discount_formatted
-    money_formatted(- (discount_cents || 0))
+    self.class.money_formatted(-(discount_cents || 0), currency)
   end
 
   def previous_invoice
@@ -99,13 +133,18 @@ class Invoice < ActiveRecord::Base
     paid_features.sum(:amount_cents)
   end
 
+  def feature_slugs
+    paid_features.pluck(:feature_slugs).flatten.uniq
+  end
+
   def create_following_invoice
     return nil unless active? || was_active?
     return following_invoice if following_invoice.present?
-    new_invoice = organization.invoices.create(subscription_start_at: subscription_end_at,
+    new_invoice = organization.invoices.create(start_at: subscription_end_at,
                                                first_invoice_id: subscription_first_invoice_id)
     new_invoice.paid_feature_ids = paid_features.recurring.pluck(:id)
     new_invoice.reload
+    new_invoice.update_attributes(child_enabled_feature_slugs: child_enabled_feature_slugs)
     new_invoice
   end
 
@@ -115,11 +154,10 @@ class Invoice < ActiveRecord::Base
       self.subscription_end_at ||= subscription_start_at + subscription_duration
     end
     self.is_active = !expired? && (force_active || paid_in_full?)
-    true # TODO: Rails 5 update
+    self.child_enabled_feature_slugs ||= []
   end
 
   def update_organization
-    organization.update_attributes(updated_at: Time.now)
-    organization.child_organizations.each { |o| o.update_attributes(updated_at: Time.now) }
+    UpdateAssociatedOrganizationsWorker.perform_async(organization_id)
   end
 end

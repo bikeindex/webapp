@@ -1,4 +1,4 @@
-class Ctype < ActiveRecord::Base
+class Ctype < ApplicationRecord
   # Note: Ctype is short for component_type.
   # The name had to be shortened because of join table key length
   include FriendlySlugFindable
@@ -11,19 +11,22 @@ class Ctype < ActiveRecord::Base
 
   has_many :components
 
+  def self.select_options
+    normalize = ->(value) { value.to_s.downcase.gsub(/[^[:alnum:]]+/, "_") }
+    translation_scope = [:activerecord, :select_options, self.name.underscore]
+
+    pluck(:id, :name).map do |id, name|
+      localized_name = I18n.t(normalize.call(name), scope: translation_scope)
+      [localized_name, id]
+    end
+  end
+
   def self.other
-    where(name: 'other', has_multiple: false, cgroup_id: Cgroup.additional_parts.id).first_or_create
+    where(name: "unknown", has_multiple: false, cgroup_id: Cgroup.additional_parts.id).first_or_create
   end
 
-  def self.unknown
-    where(name: 'unknown', has_multiple: false, cgroup_id: Cgroup.additional_parts.id).first_or_create
-  end
-
-  def self.old_attr_accessible
-    %w(name slug secondary_name image image_cache cgroup_id cgroup has_multiple cgroup_name).map(&:to_sym).freeze
-  end
-  
   before_create :set_calculated_attributes
+
   def set_calculated_attributes
     return true unless self.cgroup_name.present?
     self.cgroup_id = Cgroup.friendly_find(cgroup_name)&.id

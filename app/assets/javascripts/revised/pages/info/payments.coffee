@@ -1,10 +1,13 @@
 class BikeIndex.Payments extends BikeIndex
   constructor: ->
     @initializeEventListeners()
+    @t = window.BikeIndex.translator("payments");
 
   initializeEventListeners: ->
     $('#bikeindex-stripe-initial-form').submit (e) =>
       @submitDonation()
+      # For giving tuesday modal
+      localStorage.setItem("hideDonationModal", "true")
       return false
     $('.amount-list a').click (e) =>
       @selectPaymentOption(e)
@@ -12,17 +15,17 @@ class BikeIndex.Payments extends BikeIndex
       @selectPaymentOption(e)
 
   # Returns null if there isn't a valid value selected
-  getAmountSelected: ->
+  getAmountCentsSelected: ->
     unless $('.amount-list .active').length > 0
-      window.BikeIndexAlerts.add('info', 'Please select or enter an amount')
+      window.BikeIndexAlerts.add('info', @t("select_or_enter_amount"))
       return null
     $active = $('.amount-list .active')
     # Return the button amount if an arbitrary amount isn't entered
     return $active.data('amount') unless $active.attr('id') == 'arbitrary-amount'
-    amount = parseFloat($active.val())
-    # Return the entered amount if it's greater than 0
-    return amount if amount > 0
-    window.BikeIndexAlerts.add('info', 'Please enter a number')
+    amount_cents = parseFloat($active.val()) * 100
+    # Return the entered amount if it's greater than $1 (Stripe minimum is 0.50)
+    return amount_cents if amount_cents > 100
+    window.BikeIndexAlerts.add('info', @t('enter_the_minimum_amount'))
     null
 
   selectPaymentOption: (e) ->
@@ -32,15 +35,14 @@ class BikeIndex.Payments extends BikeIndex
     $target.addClass('active')
 
   submitDonation: ->
-    amount = @getAmountSelected()
-    return true unless amount
+    amount_cents = @getAmountCentsSelected()
+    return true unless amount_cents
     # Remove alerts if they're around - because we've got a value now!
     $('.primary-alert-block .alert').remove()
     is_arbitrary = $('.amount-list input.active').length > 0
-    @openStripeForm(is_arbitrary, amount)
+    @openStripeForm(is_arbitrary, amount_cents)
 
-  openStripeForm: (is_arbitrary, amount) ->
-    amount_cents = amount * 100
+  openStripeForm: (is_arbitrary, amount_cents) ->
     $stripe_form = $('#stripe_form')
     # Checkout integration custom: https://stripe.com/docs/checkout#integration-custom
     # Use the token to create the charge with a server-side script.
@@ -53,16 +55,13 @@ class BikeIndex.Payments extends BikeIndex
         $('#stripe_email').val(token.email)
         $('#stripe_form').submit()
     )
-    if $stripe_form.data('type') == 'Pay'
-      description = 'Payment to Bike Index'
-    else
-      description = 'Donate to Bike Index'
 
     $('#stripe_amount').val(amount_cents)
     handler.open
       name: 'Bike Index'
-      description: description
+      description: $stripe_form.data('description')
       amount: amount_cents
+      currency: $stripe_form.data('currency')
       email: $stripe_form.data('email')
       allowRememberMe: false
       panelLabel: $stripe_form.data('type')

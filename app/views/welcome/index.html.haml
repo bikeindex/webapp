@@ -1,153 +1,158 @@
-.root-landing-page
-  %header.root-landing-banner-header
+%main.root-landing-page
+  %header.jumbotron.root-landing-banner-header.bg-image-bike-hero
     .container
-      .row
-        .root-landing-header-text
-          %p
-            %strong
-              = number_with_delimiter recovered_bike_count
-            bikes recovered.
-          %h1
-            <span>Bike</span> <span>Registration</span> <span>that</span> <span>Works</span>
-          %a.btn.btn-lg.btn-success.root-action-btn{ href: new_user_path }
-            Get started, it's free
-        .root-landing-signup
-          - unless current_user.present?
-            = form_for User.new do |f|
-              .form-group
-                = f.label :name, 'full name', class: 'sr-only'
-                = f.text_field :name, placeholder: 'name', class: 'form-control'
-              .row
-                .form-group.col-md-6
-                  = f.label :email, class: 'sr-only'
-                  = f.email_field :email, placeholder: 'email', class: 'form-control'
-                .form-group.col-md-6
-                  = f.label :password, class: 'sr-only'
-                  = f.password_field :password, placeholder: 'password', class: 'form-control'
+      .root-landing-header-text
+        %h2= t(".value_of_bikes_recovered", value: as_currency(Counts.recoveries_value))
+        %h1.upcase= t(".hero")
+        %h2
+          = link_to new_bike_path do
+            = t(".register_now")
+            %span.chevron &raquo;
 
-              .checkbox
-                %label
-                  = f.check_box :terms_of_service
-                  I agree to Bike Index 
-                  %a.no-tab{ data: { target: terms_url } }
-                    terms and conditions
+  = render partial: "/landing_pages/for_organizations_photo_list"
 
-              = f.submit 'Sign up for free', class: 'btn btn-success btn-lg'
-              .or-block
-                or
-              %a.btn.btn-primary.btn-lg.root-landing-facebook{ href: '/auth/facebook' }
-                Sign up for free with Facebook
-
-  - cache 'root_body_wrap', skip_digest: true do # Expired in recovery_displays_controller
+  -# Expired in admin/recovery_displays_controller
+  - cache("root_recovery_stories", skip_digest: true) do
     .root-landing-recovery-stories
       .container
         #recovery-stories-container.extras-hidden
-          - RecoveryDisplay.limit(10).each_with_index do |recovery, i|
-            - cache(recovery) do
-              .recovery-block{ class: "recovery-#{recovery.id}" }
-                %p.recovery-quote
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 31.75 23.54"><path class="svg-q-p" d="M15.68,2.74q-2,1-3.8,2.11a25.37,25.37,0,0,0-3,2.11A13.08,13.08,0,0,0,6.43,9.64a14.15,14.15,0,0,0-1.65,3.69H6.64a5,5,0,0,1,3.93,1.35,4.41,4.41,0,0,1,1.19,3,6.07,6.07,0,0,1-1.61,4,5.46,5.46,0,0,1-4.39,1.89,5.43,5.43,0,0,1-4.36-1.65A6.45,6.45,0,0,1,0,17.54a13.41,13.41,0,0,1,1.52-6.38A20.73,20.73,0,0,1,5.34,6a25.06,25.06,0,0,1,4.71-3.61Q12.51,1,14.37,0Zm16.07,0q-2,1-3.8,2.11a25.37,25.37,0,0,0-3,2.11A13.08,13.08,0,0,0,22.5,9.64a14.15,14.15,0,0,0-1.65,3.69h1.87a5,5,0,0,1,3.93,1.35,4.41,4.41,0,0,1,1.19,3,6.07,6.07,0,0,1-1.61,4,5.46,5.46,0,0,1-4.39,1.89,5.43,5.43,0,0,1-4.36-1.65,6.45,6.45,0,0,1-1.41-4.34,13.41,13.41,0,0,1,1.52-6.38A20.73,20.73,0,0,1,21.41,6a25.06,25.06,0,0,1,4.71-3.61Q28.57,1,30.44,0Z"/></svg>
+          = render @recovery_displays.limit(5)
+          .recovery-block.recovery-see-more
+            = link_to t(".read_more_recovery_stories"),
+              recovery_stories_path,
+              class: "see-more-link"
 
-                  %span.precovery
-                    = recovery.quote.html_safe
-                %span.recovery-user
-                  - if recovery.image.present?
-                    %img{ data: { lazy: recovery.image_url(:medium) }}
-                  - else
-                    %span.no-image-spacer
-                  - if recovery.quote_by
-                    %span.h3recovery
-                      = recovery.quote_by
-                  %span.h4recovery
-                    - txt = recovery.bike.present? ? recovery.bike.type.titleize : 'Bike'
-                    - txt += " <span class='recover-date'>recovered #{l recovery.date_recovered, format: :dotted}</span>"
-                    - if recovery.link.present?
-                      %a.recover-date{ href: recovery.link }
-                        = txt.html_safe
-                    - else
-                      = txt.html_safe
-
+  - cache("root_body") do
     .root-landing-how-it-works
       .container
-        %h3.landing-container-label But How Does it work?
+        %h3.landing-container-label= t(".but_how_does_it_work")
         .row
           .col-md-2.root-landing-how-icon
-            = render '/landing_pages/icons/how_icon_register_svg'
-            = image_tag 'landing_pages/dashed_line.svg', class: 'root-icon-connector'
+            = render "/landing_pages/icons/how_icon_register_svg"
+            = image_tag "landing_pages/dashed_line.svg", class: "root-icon-connector"
           .col-md-7.root-landing-explanation
             .root-landing-explanation-wrap
-              %h4 Register Your Bike
-              %p
-                It’s simple. Submit your name, bike manufacturer, serial number, and component information to enter your bike into the most widely used bike registry on the planet.
+              %h4= t(".register_your_bike")
+              %p= t(".how_it_works")
         .row
           .col-md-2.root-landing-how-icon
             = render '/landing_pages/icons/how_icon_alert_svg'
             = image_tag 'landing_pages/dashed_line.svg', class: 'root-icon-connector'
           .col-md-7.root-landing-explanation
             .root-landing-explanation-wrap
-              %h4 Alert the Community
-              %p
-                If your bike goes missing, mark it as lost or stolen to notify the entire Bike Index community and its partners.
+              %h4= t(".alert_the_community")
+              %p= t(".if_your_bike_goes_missing")
         .row
           .col-md-2.root-landing-how-icon
             = render '/landing_pages/icons/how_icon_responds_svg'
-            = image_tag 'landing_pages/dashed_line.svg', class: 'root-icon-connector'
+            = image_tag "landing_pages/dashed_line.svg", class: "root-icon-connector"
           .col-md-7.root-landing-explanation
             .root-landing-explanation-wrap
-              %h4 The community responds
-              %p
-                A user or partner encounters your bike, uses Bike Index to identify it, and contacts you.
+              %h4= t(".the_community_responds")
+              %p= t(".identifying_your_bike")
         .row
           .col-md-2.root-landing-how-icon
-            = render '/landing_pages/icons/how_icon_recover_svg'
+            = render "/landing_pages/icons/how_icon_recover_svg"
           .col-md-7.root-landing-explanation
             .root-landing-explanation-wrap
-              %h4 You Get your Bike Back
-              %p
-                With the help of the Bike Index community and its partners, you have the information necessary to recover your lost or stolen bike at no cost to you. It’s what we do.
+              %h4= t(".you_get_your_bike_back")
+              %p= t(".recover_your_bike_for_free")
 
       %a.btn.btn-lg.btn-success.root-action-btn{ href: new_bike_path }
-        Register now!
-              
-    = render partial: '/landing_pages/footer', locals: { is_root: true }
+        = t(".register_now")
 
-    .root-landing-who
-      .container
-        %h3.landing-container-label Used By
+  .root-landing-who
+    .container
+      %h3.landing-container-label= t(".used_by")
 
-        .root-landing-who-wrap
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/UMD.png', alt: 'University of Maryland'
-          .root-landing-who-rectangle
-            = image_tag 'landing_pages/partners/Bike-East-Bay.png', alt: 'Bike East Bay'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/University-of-Washington.png', alt: 'University of Washington'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/Bike-Pittsburgh.png', alt: 'Bike Pittsburgh'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/SFPD.png', alt: 'San Francisco Police Department'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/Wisconsin-Bike-Fed.png', alt: 'Wisconsin Bike Federation'
-          .root-landing-who-rectangle
-            = image_tag 'landing_pages/partners/Bike-Theft-Task-Force-Portland.png', alt: 'Portland Bike Theft taskforce'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/Santa-Monica-PD.png', alt: 'Santa Monica Police Department'
+      .root-landing-who-wrap
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/UMD.png", alt: "University of Maryland"
+        .root-landing-who-rectangle
+          = link_to image_tag("landing_pages/partners/Bike-East-Bay.png", alt: "Bike East Bay"), "https://bikeeastbay.org/Register"
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/University-of-Washington.png", alt: "University of Washington"
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/Bike-Pittsburgh.png", alt: "Bike Pittsburgh"
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/SFPD.png", alt: "San Francisco Police Department"
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/Wisconsin-Bike-Fed.png", alt: "Wisconsin Bike Federation"
+        .root-landing-who-rectangle
+          = image_tag "landing_pages/partners/Bike-Theft-Task-Force-Portland.png", alt: "Portland Bike Theft taskforce"
+        .root-landing-who-square
+          = link_to image_tag("landing_pages/partners/Pinhead.png", alt: "Pinhead locks"), "https://pinheadlocks.com/"
 
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/St-Louis-PD.png', alt: 'St. Louis PD'
-          .root-landing-who-rectangle
-            = image_tag 'landing_pages/partners/Seattle-Bike-Blog.png', alt: 'Seattle Bike Blog'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/Sunnyvale.png', alt: 'Sunnyvale'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/Stolen-Bikes-NOLA.png', alt: 'Stolen Bikes NOLA'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/City-of-Bend.png', alt: 'City of Bend'
-          .root-landing-who-rectangle
-            = image_tag 'landing_pages/partners/Mission-Bicycle-Company.png', alt: 'Mission Bicycle Company'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/BYU.png', alt: 'Brigham Young University'
-          .root-landing-who-square
-            = image_tag 'landing_pages/partners/Bike-Portland.png', alt: 'Bike Portland'
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/St-Louis-PD.png", alt: "St. Louis PD"
+        .root-landing-who-rectangle
+          = image_tag "landing_pages/partners/Seattle-Bike-Blog.png", alt: "Seattle Bike Blog"
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/Sunnyvale.png", alt: "Sunnyvale"
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/Stolen-Bikes-NOLA.png", alt: "Stolen Bikes NOLA"
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/City-of-Bend.png", alt: "City of Bend"
+        .root-landing-who-rectangle
+          = image_tag "landing_pages/partners/Mission-Bicycle-Company.png", alt: "Mission Bicycle Company"
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/Santa-Monica-PD.png", alt: "Santa Monica Police Department"
+        .root-landing-who-square
+          = image_tag("landing_pages/partners/Bike-Portland.png", alt: "Bike Portland")
+        .root-landing-who-square
+          = image_tag "landing_pages/partners/Drenthe.png", alt: "Provincie Drenthe"
+        .root-landing-who-square
+          = image_tag("landing_pages/partners/Op-Fietse.png", alt: "Op Fietse")
 
+  .root-by-the-numbers
+    .container-fluid
+      %h3.landing-container-label= t(".bike_index_statistics")
+      .row
+        .col-md-10.charted
+          :ruby
+            scale_color = "rgb(172, 172, 172)"
+            chartkick_library_props = {
+              animation: { duration: 5000, easing: "easeOutQuart" },
+              scales: {
+                yAxes: [{
+                  gridLines: { color: "rgba(172, 172, 172, 0)" },
+                  ticks: { fontColor: scale_color }
+                }],
+                xAxes: [{
+                  weight: 5,
+                  borderColor: "rgba(0,0,0,0)",
+                  gridLines: { color: "rgba(172, 172, 172, 0)" },
+                  ticks: { fontColor: scale_color }
+                }]
+              }
+            }
 
+          = column_chart Counts.week_creation_chart, thousands: ",", defer: true, library: chartkick_library_props
+          %h4.chart-label
+            = t(".bikes_registered_this_week")
+        .col-md-2
+          .count-block
+            %h4
+              = t(".total_bikes_registered")
+              %span.count-display
+                = number_with_delimiter(Counts.total_bikes)
+          .count-block
+            %h4
+              = t(".stolen_bikes_registered")
+              %span.count-display
+                = number_with_delimiter(Counts.stolen_bikes)
+          .count-block
+            %h4
+              = t(".stolen_bikes_recovered")
+              %span.count-display
+                = number_with_delimiter(Counts.recoveries)
+          .count-block
+            %h4
+              = t(".total_recovery_value")
+              %span.count-display
+                $#{number_with_delimiter(Counts.recoveries_value)}
+          .count-block
+            %h4
+              = t(".partner_organizations")
+              %span.count-display
+                = number_with_delimiter(Counts.organizations)

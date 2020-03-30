@@ -1,7 +1,3 @@
-class LockType < ActiveRecord::Base
+class LockType < ApplicationRecord
   include FriendlySlugFindable
-
-  def self.old_attr_accessible
-    %w(name slug).map(&:to_sym).freeze
-  end
 end

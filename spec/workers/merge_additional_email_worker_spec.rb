@@ -1,38 +1,45 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe MergeAdditionalEmailWorker do
-  it { is_expected.to be_processed_in :updates }
+RSpec.describe MergeAdditionalEmailWorker, type: :job do
+  let(:subject) { MergeAdditionalEmailWorker }
 
-  context 'confirmed' do
-    let(:email) { 'FOO@barexample.com' }
-    let(:ownership) { FactoryGirl.create(:ownership, owner_email: email) }
-    let(:user_email) { FactoryGirl.create(:user_email, email: email) }
+  it "is the correct queue" do
+    expect(subject.sidekiq_options["queue"]).to eq "high_priority"
+  end
+
+  context "confirmed" do
+    let(:email) { "FOO@barexample.com" }
+    let(:ownership) { FactoryBot.create(:ownership, owner_email: email) }
+    let(:user_email) { FactoryBot.create(:user_email, email: email) }
     let(:user) { user_email.user }
-    let(:organization_invitation) { FactoryGirl.create(:organization_invitation, invitee_email: "#{email.upcase} ") }
+    let(:membership) { FactoryBot.create(:membership, invited_email: "#{email.upcase} ") }
 
-    context 'existing user account' do
-      let(:bike) { FactoryGirl.create(:bike, creator_id: old_user.id) }
-      let(:old_user) { FactoryGirl.create(:confirmed_user, email: email) }
-      let(:pre_created_ownership) { FactoryGirl.create(:ownership, creator_id: old_user.id) }
-      let(:old_user_ownership) { FactoryGirl.create(:ownership, owner_email: email) }
+    context "existing user account" do
+      let(:bike) { FactoryBot.create(:bike, creator_id: old_user.id) }
+      let(:old_user) { FactoryBot.create(:user_confirmed, email: email) }
+      let(:pre_created_ownership) { FactoryBot.create(:ownership, creator_id: old_user.id) }
+      let(:old_user_ownership) { FactoryBot.create(:ownership, owner_email: email) }
+      let(:theft_alert) { FactoryBot.create(:theft_alert, creator: old_user) }
 
-      let(:organization) { organization_invitation.organization }
-      let(:second_organization) { FactoryGirl.create(:organization, auto_user_id: old_user.id) }
-      let(:membership) { FactoryGirl.create(:membership, user: old_user, organization: second_organization) }
-      let(:third_organization) { FactoryGirl.create(:organization, auto_user_id: old_user.id) }
-      let(:old_membership) { FactoryGirl.create(:membership, user: old_user, organization: third_organization) }
-      let(:new_membership) { FactoryGirl.create(:membership, user: user, organization: third_organization) }
+      let(:organization) { membership.organization }
+      let(:membership) { FactoryBot.create(:membership_claimed, user: old_user) }
+      let(:second_organization) { FactoryBot.create(:organization, auto_user_id: old_user.id) }
+      let(:second_membership) { FactoryBot.create(:membership_claimed, user: old_user, organization: second_organization) }
+      let(:third_organization) { FactoryBot.create(:organization, auto_user_id: old_user.id) }
+      let(:old_membership) { FactoryBot.create(:membership_claimed, user: old_user, organization: third_organization) }
+      let(:new_membership) { FactoryBot.create(:membership_claimed, user: user, organization: third_organization) }
 
-      let(:integration) { FactoryGirl.create(:integration, user: old_user, information: { 'info' => { 'email' => email, name: 'blargh' } }) }
-      let(:lock) { FactoryGirl.create(:lock, user: old_user) }
-      let(:payment) { FactoryGirl.create(:payment, user: old_user) }
-      let(:customer_contact) { FactoryGirl.create(:customer_contact, user: old_user, creator: old_user) }
-      let(:stolen_notification) { FactoryGirl.create(:stolen_notification, sender: old_user, receiver: old_user) }
-      let(:oauth_application) { Doorkeeper::Application.create(name: 'MyApp', redirect_uri: 'https://app.com') }
+      let(:integration) { FactoryBot.create(:integration, user: old_user, information: { "info" => { "email" => email, name: "blargh" } }) }
+      let(:lock) { FactoryBot.create(:lock, user: old_user) }
+      let(:payment) { FactoryBot.create(:payment, user: old_user) }
+      let(:customer_contact) { FactoryBot.create(:customer_contact, user: old_user, creator: old_user) }
+      let(:stolen_notification) { FactoryBot.create(:stolen_notification, sender: old_user, receiver: old_user) }
+      let(:oauth_application) { Doorkeeper::Application.create(name: "MyApp", redirect_uri: "https://app.com") }
       before do
         old_user.reload
         expect(ownership).to be_present
-        expect(organization_invitation).to be_present
+        expect(membership).to be_present
+        expect(second_membership).to be_present
         expect(user_email.confirmed).to be_truthy
         old_user_ownership.mark_claimed
         expect(old_user.ownerships.first).to eq old_user_ownership
@@ -49,9 +56,10 @@ describe MergeAdditionalEmailWorker do
         expect(payment).to be_present
         expect(customer_contact).to be_present
         expect(stolen_notification).to be_present
+        expect(theft_alert).to be_present
       end
 
-      it 'merges bikes and memberships and deletes user' do
+      it "merges bikes and memberships and deletes user" do
         user.reload
         expect(user.memberships.count).to eq 1
         expect(user.ownerships.count).to eq 0
@@ -77,6 +85,7 @@ describe MergeAdditionalEmailWorker do
         expect(user_email.user).to eq user
         expect(user.ownerships.count).to eq 2
         expect(user.memberships.count).to eq 3
+        expect(user.organizations.pluck(:id)).to match_array([organization.id, second_organization.id, third_organization.id])
         expect(membership.user).to eq user
         expect(new_membership.user).to eq user
         expect(second_organization.auto_user).to eq user
@@ -95,19 +104,19 @@ describe MergeAdditionalEmailWorker do
       end
     end
 
-    context 'existing multi-user-account' do
-      it 'merges all the accounts. It does not create multiple memberships for one org'
+    context "existing multi-user-account" do
+      it "merges all the accounts. It does not create multiple memberships for one org"
       # It would be nice to test this... future todo
     end
 
-    context 'no existing user account' do
+    context "no existing user account" do
       before do
         expect(ownership).to be_present
-        expect(organization_invitation).to be_present
+        expect(membership).to be_present
         expect(user_email.confirmed).to be_truthy
       end
 
-      it 'runs the same things as user_create' do
+      it "runs the same things as user_create" do
         user.reload
         expect(user.memberships.count).to eq 0
         expect(user.ownerships.count).to eq 0
@@ -123,10 +132,10 @@ describe MergeAdditionalEmailWorker do
     end
   end
 
-  context 'unconfirmed' do
+  context "unconfirmed" do
     it "doesn't merge" do
-      ownership = FactoryGirl.create(:ownership)
-      user_email = FactoryGirl.create(:user_email, email: ownership.owner_email, confirmation_token: 'token-stuff')
+      ownership = FactoryBot.create(:ownership)
+      user_email = FactoryBot.create(:user_email, email: ownership.owner_email, confirmation_token: "token-stuff")
       expect(user_email.confirmed).to be_falsey
       MergeAdditionalEmailWorker.new.perform(user_email.id)
       user_email.reload

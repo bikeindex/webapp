@@ -1,11 +1,12 @@
 class RegistrationsController < ApplicationController
-  skip_before_filter :set_x_frame_options_header, except: [:new]
-  before_filter :simple_header
-  layout 'reg_embed'
+  skip_before_action :set_x_frame_options_header, except: [:new]
+  skip_before_action :verify_authenticity_token, only: [:create] # Because it was causing issues, and we don't need it here
+  before_action :simple_header
+  layout "reg_embed"
 
   def new
     @stolen = params[:stolen] # Passed into embed form
-    render layout: 'application_revised'
+    render layout: "application"
   end
 
   def embed # Attributes assigned in the partial, but can be overridden so it can be used anywhere
@@ -21,7 +22,7 @@ class RegistrationsController < ApplicationController
 
   def create
     @b_param = BParam.new(permitted_params)
-    @b_param.errors.add :owner_email, 'required' unless @b_param.owner_email.present?
+    @b_param.errors.add :owner_email, "required" unless @b_param.owner_email.present?
     if @b_param.errors.blank? && @b_param.save
       EmailPartialRegistrationWorker.perform_async(@b_param.id)
     else
@@ -37,7 +38,7 @@ class RegistrationsController < ApplicationController
   end
 
   def find_selectable_child_organizations
-    return [] unless @organization.present? && ActiveRecord::Type::Boolean.new.type_cast_from_database(params[:select_child_organization])
+    return [] unless @organization.present? && ParamsNormalizer.boolean(params[:select_child_organization])
     @organization.child_organizations
   end
 
@@ -49,6 +50,6 @@ class RegistrationsController < ApplicationController
                                     :primary_frame_color_id,
                                     :secondary_frame_color_id,
                                     :tertiary_frame_color_id)
-          .merge(origin: 'embed_partial')
+          .merge(origin: "embed_partial")
   end
 end

@@ -1,12 +1,13 @@
-require 'spec_helper'
+require "rails_helper"
 
 RSpec.describe BikeOrganization, type: :model do
-  describe 'validations' do
-    it { is_expected.to belong_to :bike }
-    it { is_expected.to belong_to :organization }
-    it { is_expected.to validate_presence_of :bike_id }
-    it { is_expected.to validate_presence_of :organization_id }
-    it { is_expected.to validate_uniqueness_of(:organization_id).scoped_to(:bike_id) }
+  describe "can_edit_claimed" do
+    let(:bike_organization) { BikeOrganization.new }
+    it "assigns correctly" do
+      expect(bike_organization.can_edit_claimed).to be_truthy
+      bike_organization.can_edit_claimed = false
+      expect(bike_organization.can_edit_claimed).to be_falsey
+      expect(bike_organization.can_not_edit_claimed).to be_truthy
+    end
   end
 end
-

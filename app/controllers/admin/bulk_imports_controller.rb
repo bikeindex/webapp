@@ -1,23 +1,30 @@
 class Admin::BulkImportsController < Admin::BaseController
-  before_filter :find_bulk_import, only: [:show]
+  include SortableTable
+  before_action :find_bulk_import, only: [:show, :update]
 
   def index
     page = params[:page] || 1
-    per_page = params[:per_page] || 25
-    if params[:organization_id].present?
-      organization_id = params[:organization_id] == "none" ? nil : params[:organization_id]
-      bulk_imports = BulkImport.where(organization_id: organization_id)
-    else
-      bulk_imports = BulkImport.all
-    end
-    @bulk_imports = bulk_imports.order(created_at: :desc).includes(:creation_states)
-                                .page(page).per(per_page)
+    per_page = params[:per_page] || 10
+    @bulk_imports = matching_bulk_imports.includes(:organization, :user, :creation_states)
+                                         .reorder(sort_column + " " + sort_direction)
+                                         .page(page).per(per_page)
   end
 
   def show; end
 
   def new
-    @bulk_import = BulkImport.new
+    organization_id = Organization.friendly_find(params[:organization_id])&.id
+    @bulk_import = BulkImport.new(organization_id: organization_id, no_notify: params[:no_notify])
+  end
+
+  def update
+    if params[:reprocess]
+      BulkImportWorker.perform_async(@bulk_import.id)
+      flash[:success] = "Bulk Import enqueued for processing"
+    else
+      flash[:error] = "Ooooops, can't do that, how the hell did you manage to?"
+    end
+    redirect_to admin_bulk_import_url(@bulk_import)
   end
 
   def create
@@ -32,6 +39,8 @@ class Admin::BulkImportsController < Admin::BaseController
     end
   end
 
+  helper_method :matching_bulk_imports
+
   protected
 
   def permitted_parameters
@@ -40,5 +49,24 @@ class Admin::BulkImportsController < Admin::BaseController
 
   def find_bulk_import
     @bulk_import = BulkImport.find(params[:id])
+  end
+
+  def sortable_columns
+    %w[created_at progress user_id]
+  end
+
+  def matching_bulk_imports
+    return @matching_bulk_imports if defined?(@matching_bulk_imports)
+    bulk_imports = BulkImport
+    if params[:ascend].present?
+      bulk_imports = bulk_imports.ascend
+    elsif params[:not_ascend].present?
+      bulk_imports = bulk_imports.not_ascend
+    end
+
+    if params[:organization_id].present?
+      bulk_imports = bulk_imports.where(organization_id: current_organization.id)
+    end
+    @matching_bulk_imports = bulk_imports
   end
 end

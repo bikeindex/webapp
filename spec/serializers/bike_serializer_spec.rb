@@ -1,4 +1,4 @@
-require "spec_helper"
+require "rails_helper"
 
 describe BikeSerializer, type: :lib  do
   describe "standard validations" do

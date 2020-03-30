@@ -1,7 +1,8 @@
 class Admin::TweetsController < Admin::BaseController
-  before_filter :find_tweet, except: [:new, :create, :index]
+  before_action :find_tweet, except: [:new, :create, :index]
+
   def index
-    @tweets = Tweet.order(created_at: :desc)
+    @tweets = Tweet.excluding_retweets.order(created_at: :desc)
   end
 
   def show
@@ -13,7 +14,7 @@ class Admin::TweetsController < Admin::BaseController
 
   def update
     if @tweet.update_attributes(permitted_parameters)
-      flash[:notice] = 'Tweet saved!'
+      flash[:notice] = "Tweet saved!"
       redirect_to edit_admin_tweet_url
     else
       render action: :edit
@@ -34,6 +35,16 @@ class Admin::TweetsController < Admin::BaseController
     end
   end
 
+  def destroy
+    if @tweet.present? && @tweet.destroy
+      flash[:info] = "Tweet deleted."
+      redirect_to admin_tweets_url
+    else
+      flash[:error] = "Could not delete tweet."
+      redirect_to edit_admin_tweet_url(@tweet.id)
+    end
+  end
+
   private
 
   def permitted_parameters
@@ -46,6 +57,6 @@ class Admin::TweetsController < Admin::BaseController
   end
 
   def fetch_twitter_response(tweet_id)
-    Twitter.status(tweet_id).to_json
+    TwitterClient.status(tweet_id).to_json
   end
 end

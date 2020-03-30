@@ -4,13 +4,17 @@ class BikeIndex.BikesEdit extends BikeIndex
     new FormWellMenu
     # Get the template name, call page specific Scripts if we have them
     switch $('.form-well-header.container').attr('data-template')
-      when 'root' then new BikeIndex.BikesEditRoot
-      when 'ownership' then new BikeIndex.BikesEditOwnership
+      when 'bike_details' then new BikeIndex.BikesEditBikeDetails
       when 'drivetrain' then new BikeIndex.BikesEditDrivetrain
-      when 'stolen' then new BikeIndex.BikesEditStolen
+      when 'report_stolen' then new BikeIndex.BikesEditStolen
+      when 'report_recovered' then new BikeIndex.BikesEditStolen
+      when 'theft_details' then new BikeIndex.BikesEditStolen
       when 'photos' then new BikeIndex.BikesEditPhotos
       when 'accessories' then new BikeIndex.BikesEditAccessories
       when 'remove' then new BikeIndex.BikesEditRemove
+      when 'groups' then new BikeIndex.BikesEditGroups
+      when 'alert' then new BikeIndex.BikesEditAlert
+      when 'alert_purchase' then new BikeIndex.BikesEditAlertPurchase
 
   updatePageLocation: (url) ->
     window.location.href = url

@@ -10,15 +10,15 @@ class OrganizedMailerPreview < ActionMailer::Preview
   end
 
   def finished_registration_organization
-    render_finished_registration(Bike.where.not(creation_organization_id: nil))
+    render_finished_registration(Bike.organized)
   end
 
   def finished_registration_stolen
     render_finished_registration(Bike.unscoped.stolen)
   end
 
-  def finished_registration_recovered
-    render_finished_registration(Bike.where(recovered: true))
+  def finished_registration_abandoned
+    render_finished_registration(Bike.where(abandoned: true))
   end
 
   def organization_invitation

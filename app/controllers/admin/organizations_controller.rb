@@ -1,25 +1,16 @@
 class Admin::OrganizationsController < Admin::BaseController
-  before_filter :find_organization, only: [:show, :edit, :update, :destroy]
-  before_filter :set_sort_and_direction, only: [:index]
+  include SortableTable
+  before_action :find_organization, only: [:show, :edit, :update, :destroy]
 
   def index
     page = params[:page] || 1
     per_page = params[:per_page] || 25
-    orgs = Organization.all
-    orgs = orgs.paid if params[:is_paid].present?
-    orgs = orgs.admin_text_search(params[:query]) if params[:query].present?
-    orgs = orgs.where(org_type: params[:org_type]) if params[:org_type].present?
-    @organizations = orgs.reorder("#{@sort} #{@sort_direction}").page(page).per(per_page)
-    @organizations_count = orgs.count
+    @organizations = matching_organizations.reorder("organizations.#{sort_column} #{sort_direction}").page(page).per(per_page)
   end
 
   def show
-    @locations = @organization.locations.decorate
-    bikes = Bike.where(creation_organization_id: @organization.id).reorder('created_at desc')
-    page = params[:page] || 1
-    per_page = params[:per_page] || 25
-    @bikes = bikes.page(page).per(per_page)
-    @organization = @organization.decorate
+    @locations = @organization.locations
+    @bikes = @organization.bikes.reorder("created_at desc").page(1).per(10)
   end
 
   def show_deleted
@@ -27,7 +18,7 @@ class Admin::OrganizationsController < Admin::BaseController
   end
 
   def recover
-    @organization = Organization.only_deleted.find(params[:id]).recover
+    @organization = Organization.only_deleted.find(params[:id]).restore(recursive: true)
     redirect_to admin_organizations_url
   end
 
@@ -42,7 +33,7 @@ class Admin::OrganizationsController < Admin::BaseController
   def update
     # Needs to update approved before saving so set_locations_shown is applied on save
     if @organization.update_attributes(permitted_parameters)
-      flash[:success] = 'Organization Saved!'
+      flash[:success] = "Organization Saved!"
       redirect_to admin_organization_url(@organization)
     else
       render action: :edit
@@ -53,10 +44,10 @@ class Admin::OrganizationsController < Admin::BaseController
     @organization = Organization.new(permitted_parameters)
     @organization.approved = true
     if @organization.save
-      flash[:success] = 'Organization Created!'
+      flash[:success] = "Organization Created!"
       redirect_to edit_admin_organization_url(@organization)
     else
-      render action: :new
+      render action: :create
     end
   end
 
@@ -65,25 +56,64 @@ class Admin::OrganizationsController < Admin::BaseController
     redirect_to admin_organizations_url
   end
 
+  helper_method :matching_organizations
+
   protected
 
   def permitted_parameters
-    params.require(:organization).permit(permitted_organization_params)
+    approved_kind = params.dig(:organization, :kind)
+    approved_kind = "other" unless Organization.kinds.include?(approved_kind)
+    params
+      .require(:organization)
+      .permit(
+        :access_token,
+        :api_access_approved,
+        :approved,
+        :ascend_name,
+        :auto_user_id,
+        :available_invitation_count,
+        :avatar,
+        :avatar_cache,
+        :embedable_user_email,
+        :is_suspended,
+        :lightspeed_cloud_api_key,
+        :lock_show_on_map,
+        :name,
+        :parent_organization_id,
+        :previous_slug,
+        :search_radius,
+        :short_name,
+        :show_on_map,
+        :slug,
+        :website,
+        :manual_pos_kind,
+        [locations_attributes: permitted_locations_params],
+      ).merge(kind: approved_kind)
   end
 
-  def permitted_organization_params
-    (%w(available_invitation_count sent_invitation_count name short_name slug website
-       show_on_map is_suspended org_type embedable_user_email auto_user_id lock_show_on_map
-       api_access_approved access_token new_bike_notification avatar avatar_cache parent_organization_id
-       lightspeed_cloud_api_key use_additional_registration_field approved is_paid show_bulk_import
-      ).map(&:to_sym) + [locations_attributes: permitted_locations_params]).freeze
+  def matching_organizations
+    return @matching_organizations if defined?(@matching_organizations)
+    @search_paid = ParamsNormalizer.boolean(params[:search_paid])
+    matching_organizations = Organization.unscoped
+    matching_organizations = matching_organizations.paid if @search_paid
+    matching_organizations = matching_organizations.admin_text_search(params[:search_query]) if params[:search_query].present?
+    matching_organizations = matching_organizations.where(kind: params[:search_kind]) if params[:search_kind].present?
+    matching_organizations = matching_organizations.where(pos_kind: pos_kind_for_organizations) if params[:search_pos].present?
+    @matching_organizations = matching_organizations
   end
 
-  def set_sort_and_direction
-    @sort = params[:sort]
-    @sort = 'created_at' unless %w(name created_at approved).include?(@sort)
-    @sort_direction = params[:sort_direction]
-    @sort_direction = 'desc' unless %w(asc desc).include?(@sort_direction)
+  def sortable_columns
+    %w[created_at name approved pos_kind]
+  end
+
+  def pos_kind_for_organizations
+    if params[:search_pos] == "with_pos"
+      return Organization.pos_kinds - Organization.no_pos_kinds
+    elsif params[:search_pos] == "without_pos"
+      return Organization.no_pos_kinds
+    else
+      params[:search_pos]
+    end
   end
 
   def permitted_locations_params
@@ -92,7 +122,14 @@ class Admin::OrganizationsController < Admin::BaseController
 
   def find_organization
     @organization = Organization.friendly_find(params[:id])
-    unless @organization
+    return true if @organization.present?
+    raise ActiveRecord::RecordNotFound # Because by all rights, this should have been raised
+  rescue ActiveRecord::RecordNotFound
+    @organization = Organization.unscoped.friendly_find(params[:id])
+    if @organization.present?
+      flash[:error] = "This organization is deleted! Things might not work correctly in here"
+      return true
+    else
       flash[:error] = "Sorry! That organization doesn't exist"
       redirect_to admin_organizations_url and return
     end

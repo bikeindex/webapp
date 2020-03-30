@@ -1,11 +1,7 @@
 class IntegrationAssociationError < StandardError
 end
 
-class Integration < ActiveRecord::Base
-  def self.old_attr_accessible
-    %w(access_token provider_name user_id user information).map(&:to_sym).freeze
-  end
-
+class Integration < ApplicationRecord
   validates_presence_of :access_token
   validates_presence_of :information
 
@@ -14,10 +10,19 @@ class Integration < ActiveRecord::Base
   belongs_to :user
 
   before_create :associate_with_user
+
+  def self.email_from_globalid_pii(auth_hash)
+    decrypted_pii = auth_hash.dig("info", "decrypted_pii")&.first
+    decrypted_pii && decrypted_pii["value"]
+  end
+
   def associate_with_user
-    self.provider_name ||= information['provider']
-    if provider_name == 'facebook' || provider_name == 'strava'
-      update_or_create_user(email: information['info']['email'], name: information['info']['name'])
+    self.provider_name ||= information["provider"]
+    if provider_name == "facebook" || provider_name == "strava"
+      update_or_create_user(email: information["info"]["email"], name: information["info"]["name"])
+    elsif provider_name == "globalid"
+      update_or_create_user(email: self.class.email_from_globalid_pii(information),
+                            name: information["info"]["name"])
     end
   end
 
@@ -34,9 +39,12 @@ class Integration < ActiveRecord::Base
   end
 
   def create_user(email:, name:)
-    pword = SecureRandom.hex
-    i_user = User.new(email: email, name: name, password: pword, password_confirmation: pword)
-    if i_user.save
+    password = SecurityTokenizer.new_password_token
+    i_user = User.new(email: email,
+                      name: name,
+                      password: password,
+                      password_confirmation: password)
+    if i_user.save!
       i_user.confirm(i_user.confirmation_token)
     else
       errors.add :user_errors, i_user.errors

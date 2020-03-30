@@ -1,44 +1,49 @@
-.form.form-horizontal
-  = form_for [:admin, @paid_feature] do |f|
-    - if @paid_feature.errors.any?
-      = render partial: "/shared/errors", locals: { name: "Paid feature", obj: @paid_feature }
-
-    .control-group.padded
-      .control-label
+= form_for [:admin, @paid_feature] do |f|
+  .row
+    .col-xs-12
+      - if @paid_feature.errors.any?
+        = render partial: "/shared/errors", locals: { name: "Paid feature", obj: @paid_feature }
+  .row
+    .col-md-6.col-xs-12
+      .form-group
         = f.label :kind
-      .controls
-        - if @paid_feature.locked?
-          %span.less-strong
-            = @paid_feature.kind
-        - else
-          = f.select :kind, PaidFeature.kinds.map { |k| [k.humanize, k] }
-
-    .control-group.padded
-      .control-label
+        = f.select :kind, PaidFeature.kinds.map { |k| [k.humanize, k] }, {}, class: "form-control"
+    .col-md-6.col-xs-12
+      .form-group
         = f.label :name
-      .controls
-        - if @paid_feature.locked?
-          %span.less-strong
-            = @paid_feature.name
-        - else
-          = f.text_field :name
-
-    .control-group.padded
-      .control-label
+        = f.text_field :name, class: "form-control"
+  - if current_user.developer?
+    .row
+      .col-md-6
+        .form-group
+          = f.label :feature_slugs_string do
+            Paid Feature Slugs <small>comma delineated</small>
+          = f.text_area :feature_slugs_string, class: "form-control"
+      .col-md-6
+        %label.d-none.d-md-block &nbsp;
+        %small.less-strong
+          Used slugs:
+          - PaidFeature::EXPECTED_SLUGS.sort.each do |slug|
+            %code
+              = slug
+  .row.mt-2
+    .col-md-6.col-xs-12
+      .form-group
         = f.label :amount
-      .controls
-        = f.number_field :amount, step: 1, min: 0
+        .input-group.mb-2
+          .input-group-prepend
+            .input-group-text
+              = f.select :currency, options_for_select(currency_symbols.zip(available_currencies))
+          = f.number_field :amount, step: 1, min: 0, class: "form-control"
 
-    .control-group.padded
-      .control-label
+    .col-md-6.col-xs-12
+      .form-group
         = f.label :description
-      .controls
-        = f.text_area :description, style: "width: 100%;"
-
-    .control-group.padded
-      .control-label
+        = f.text_area :description, style: "width: 100%;", class: "form-control"
+  .row
+    .col-xs-12.col-md-6
+      .form-group
         = f.label :details_link
-      .controls
-        = f.text_field :details_link
+        = f.text_field :details_link, class: "form-control"
 
-    = f.submit "Submit", class: 'button-green'
+  = f.submit (@paid_feature.id.present? ? "Update" : "Create"), class: 'btn btn-success'

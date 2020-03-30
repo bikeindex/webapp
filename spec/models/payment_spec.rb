@@ -1,11 +1,11 @@
-require "spec_helper"
+require "rails_helper"
 
-describe Payment do
+RSpec.describe Payment, type: :model do
   it_behaves_like "amountable"
   describe "create" do
     context "stripe" do
-      let(:user) { FactoryGirl.create(:user) }
-      let(:payment) { FactoryGirl.create(:payment, user: nil, email: user.email) }
+      let(:user) { FactoryBot.create(:user) }
+      let(:payment) { FactoryBot.create(:payment, user: nil, email: user.email) }
       it "enqueues an email job, associates the user" do
         expect do
           payment
@@ -16,8 +16,8 @@ describe Payment do
       end
     end
     context "check with organization_id but no user or email" do
-      let(:organization) { FactoryGirl.create(:organization) }
-      let(:payment) { FactoryGirl.create(:payment_check, user: nil, email: nil, organization: organization) }
+      let(:organization) { FactoryBot.create(:organization) }
+      let(:payment) { FactoryBot.create(:payment_check, user: nil, email: nil, organization: organization) }
       it "does not enqueue an email" do
         expect do
           payment # it is created here
@@ -25,6 +25,36 @@ describe Payment do
         expect(payment.valid?).to be_truthy
         payment.reload
         expect(payment.id).to be_present
+      end
+    end
+  end
+
+  describe "set_calculated_attributes" do
+    let(:payment) { Payment.new }
+    it "sets donation" do
+      payment.set_calculated_attributes
+      expect(payment.kind).to eq "donation"
+    end
+    context "theft_alert" do
+      let(:payment) { Payment.new(kind: "theft_alert") }
+      it "does not change from theft_alert" do
+        payment.set_calculated_attributes
+        expect(payment.kind).to eq "theft_alert"
+      end
+    end
+    context "payment" do
+      let(:payment) { Payment.new(kind: "payment") }
+      it "stays payment" do
+        payment.set_calculated_attributes
+        expect(payment.kind).to eq "payment"
+      end
+      context "with invoice" do
+        let(:invoice) { Invoice.new }
+        it "becomes invoice" do
+          payment.invoice = invoice
+          payment.set_calculated_attributes
+          expect(payment.kind).to eq "payment"
+        end
       end
     end
   end

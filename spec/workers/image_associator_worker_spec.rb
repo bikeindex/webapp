@@ -1,9 +1,13 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe ImageAssociatorWorker do
-  it { is_expected.to be_processed_in :updates }
+RSpec.describe ImageAssociatorWorker, type: :job do
+  let(:subject) { ImageAssociatorWorker }
 
-  it 'enqueues another awesome job' do
+  it "is the correct queue" do
+    expect(subject.sidekiq_options["queue"]).to eq "high_priority"
+  end
+
+  it "enqueues another awesome job" do
     ImageAssociatorWorker.perform_async
     expect(ImageAssociatorWorker).to have_enqueued_sidekiq_job
   end

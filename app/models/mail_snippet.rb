@@ -1,4 +1,6 @@
-class MailSnippet < ActiveRecord::Base
+class MailSnippet < ApplicationRecord
+  include Geocodeable
+
   KIND_ENUM = { custom: 0, header: 1, welcome: 2, footer: 3, security: 4, abandoned_bike: 5, location_triggered: 6 }.freeze
   validates_presence_of :name
 
@@ -13,8 +15,6 @@ class MailSnippet < ActiveRecord::Base
 
   enum kind: KIND_ENUM
 
-  geocoded_by :address
-  after_validation :geocode, if: lambda { is_location_triggered && address.present? }
   after_commit :update_organization
 
   before_validation :set_calculated_attributes
@@ -24,8 +24,9 @@ class MailSnippet < ActiveRecord::Base
       header: "Top of email block",
       welcome: "Below header",
       footer: "Above <3 <3 <3 <3 Bike Index Team",
-      security: "How to keep your bike safe, in email \"finished registration\"",
-      abandoned_bike: "Geocoded abandoned bike email"
+      partial: "Below \"Finish it\" button, in email \"Partial registration\"",
+      security: "How to keep your bike safe, in email \"Finished registration\"",
+      abandoned_bike: "Geocoded abandoned bike email",
     }.as_json
   end
 
@@ -47,6 +48,15 @@ class MailSnippet < ActiveRecord::Base
   def update_organization
     # Because we need to update the organization and make sure mail snippet calculations are included
     # Manually update to ensure that it runs the before save stuff
-    organization && organization.update_attributes(updated_at: Time.now)
+    organization && organization.update(updated_at: Time.current)
+  end
+
+  private
+
+  def should_be_geocoded?
+    return false if skip_geocoding?
+    return true if is_location_triggered?
+    return false if address.blank?
+    address_changed?
   end
 end

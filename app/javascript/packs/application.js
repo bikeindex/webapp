@@ -1,4 +1,4 @@
-/* eslint no-console:0 */
+import "core-js/stable";
+import "regenerator-runtime/runtime";
 
-// Code we've written:
-import "../src/javascript/initializer.js";
+import "./pages/initializer";

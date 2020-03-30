@@ -5,6 +5,7 @@ class ManufacturerV2ShowSerializer < ActiveModel::Serializer
     :frame_maker,
     :image,
     :description,
+    :short_name,
     :slug
 
   self.root = "manufacturer"
@@ -15,7 +16,9 @@ class ManufacturerV2ShowSerializer < ActiveModel::Serializer
   end
 
   def image
-    return "" unless object.logo_url.present? && object.logo_url.match('/blank.png').blank?
+    return "" unless object.logo_url.present? && object.logo_url.match("/blank.png").blank?
     object.logo_url
   end
+
+  def short_name; object.simple_name end
 end

@@ -1,19 +1,19 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe Admin::PaintsController do
+RSpec.describe Admin::PaintsController, type: :controller do
   include_context :logged_in_as_super_admin
-  describe 'index' do
-    it 'renders' do
+  describe "index" do
+    it "renders" do
       get :index
       expect(response.status).to eq(200)
       expect(response).to render_template(:index)
     end
   end
 
-  describe 'edit' do
-    it 'renders' do
-      paint = FactoryGirl.create(:paint)
-      get :edit, id: paint.id
+  describe "edit" do
+    it "renders" do
+      paint = FactoryBot.create(:paint)
+      get :edit, params: { id: paint.id }
       expect(response.status).to eq(200)
       expect(response).to render_template(:edit)
     end

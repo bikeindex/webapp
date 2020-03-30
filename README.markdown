@@ -1,15 +1,24 @@
-# ![BIKE INDEX](https://github.com/bikeindex/bike_index/blob/master/bike_index.png?raw=true) This is the [Bike Index](https://www.bikeindex.org) [![Build Status](https://travis-ci.org/bikeindex/bike_index.svg?branch=master)](https://travis-ci.org/bikeindex/bike_index)
-[![Test Coverage](https://codeclimate.com/github/bikeindex/bike_index/badges/coverage.svg)](https://codeclimate.com/github/bikeindex/bike_index) [![View performance data on Skylight](https://badges.skylight.io/status/j93iQ4K2pxCP.svg)](https://oss.skylight.io/app/applications/j93iQ4K2pxCP)
+# [![BIKE INDEX][bike-index-logo]][bike-index] ![Cloud66 Deployment Status][cloud66-badge] [![CircleCI][circleci-badge]][circleci] [![Test Coverage][codeclimate-badge]][codeclimate] [![View performance data on Skylight][skylight-badge]][skylight]
+
+[bike-index-logo]: https://github.com/bikeindex/bike_index/blob/master/bike_index.png?raw=true
+[circleci]: https://circleci.com/gh/bikeindex/bike_index/tree/master
+[circleci-badge]: https://circleci.com/gh/bikeindex/bike_index/tree/master.svg?style=svg
+[codeclimate]: https://codeclimate.com/github/bikeindex/bike_index
+[codeclimate-badge]: https://codeclimate.com/github/bikeindex/bike_index/badges/coverage.svg
+[skylight]: https://oss.skylight.io/app/applications/j93iQ4K2pxCP
+[skylight-badge]: https://badges.skylight.io/status/j93iQ4K2pxCP.svg
+[bike-index]: https://www.bikeindex.org
+[cloud66-badge]: https://app.cloud66.com/stacks/badge/ff54cf1d55d7eb91ef09c90f125ae4f1.svg
 
 Bike registration that works: online, powerful, free.
 
-Registering a bike only takes a few minutes and gives cyclists a permanent record linked to their identity that proves ownership in the case of a theft.
+Registering a 🚲 only takes a few minutes and gives 🚴‍♀️ a permanent record linked to their identity that proves ownership in the case of a theft.
 
 We're an open source project. Take a gander through our code, report bugs, or download it and run it locally.
 
 ### Dependencies
 
-- [Ruby 2.5.0](http://www.ruby-lang.org/en/) (we use [RVM](https://rvm.io/))
+- [Ruby 2.5.5](http://www.ruby-lang.org/en/) (we use [RVM](https://rvm.io/))
 
 - [Rails 4.2](http://rubyonrails.org/)
 
@@ -25,45 +34,106 @@ We're an open source project. Take a gander through our code, report bugs, or do
 
 - Requires 1gb of ram (or at least more than 512mb)
 
-
 ## Running Bike Index locally
 
 This explanation assumes you're familiar with developing Ruby on Rails applications.
 
-- `bundle install` install ruby gems
-
-- `yarn install` install js packages
-
-- `rake db:setup` create and seed your database
-
-- `rake seed_test_users_and_bikes` to:
-  - Add the three test user accounts: admin@example.com, member@example.com, user@example.com (all have password `please12`)
-  - Give user@example.com 50 bikes
+- `bin/setup` sets up the application and seeds:
+  - Three test user accounts: admin@example.com, member@example.com, user@example.com (all have password `please12`)
+  - Gives user@example.com 50 bikes
 
 - `./start` start the server.
 
-  - [start](start) is a bash script. It starts redis in the background and runs foreman with the [dev procfile](Procfile_development). If you need/prefer something else, do that
+  - [start](start) is a bash script. It starts redis in the background and runs foreman with the [dev procfile](Procfile_development). If you need/prefer something else, do that. If your "something else" isn't running at localhost:3001, change the appropriate values in [Procfile_development](Procfile_development) and [.env](.env)
 
 - Go to [localhost:3001](http://localhost:3001)
 
-  - if you want to use [Pow](http://pow.cx/) (or some other setup that isn't through localhost:3001), change the appropriate values in [session_store.rb](config/initializers/session_store.rb) and [.env](.env).
+| Toggle in development | command                      | default  |
+| ---------             | -------                      | -------  |
+| Caching               | `bin/rake dev:cache`         | disabled |
+| [letter_opener][]     | `bin/rake dev:letter_opener` | enabled  |
 
+[letter_opener]: https://github.com/ryanb/letter_opener
+
+## Internationalization
+
+See the [internationalization docs](docs/internationalization.markdown) for details.
 
 ## Testing
- 
-We use [RSpec](https://github.com/rspec/rspec) and [Guard](https://github.com/guard/guard) for testing.
-    
-- Run the test suit in the background with `bundle exec guard`
 
-- You may have to manually add the fuzzystrmatch extension, which we use for near serial searches, to your databases. The migration should take care of this but sometimes doesn't. Open the databases in postgres (`psql bikeindex_development` and `psql bikeindex_test`) and add the extension.
-    
-```
-CREATE EXTENSION fuzzystrmatch;
-```
+We use [RSpec](https://github.com/rspec/rspec) and
+[Guard](https://github.com/guard/guard) for testing.
+
+- Run the test suite continuously in the background with `bin/guard` (watches for file changes/saves and runs those specs)
+
+- You may have to manually add the `fuzzystrmatch` extension, which we use for
+  near serial searches, to your databases. The migration should take care of
+  this but sometimes doesn't. Open the databases in postgres
+  (`psql bikeindex_development` and `psql bikeindex_test`) and add the extension.
+
+  ```sql
+  CREATE EXTENSION fuzzystrmatch;
+  ```
+
+We use [`parallel_tests`](https://github.com/grosser/parallel_tests/) to run the test suite in parallel. By default, this will spawn one process per CPU in your computer.
+
+- Run all the tests in parallel with `bin/rake parallel:spec`
+
+- Run `bin/rake parallel:prepare` to synchronize the test db schema after migrations (rather than `db:test:prepare`).
+
+- Run specific files or test directories with `bin/parallel_rspec <FILES_OR_FOLDERS>`
+
+- Run Guard with parallelism `bin/guard -G Guardfile_parallel`
+
+## Code Hygiene
+
+We use the following tools to automate code formatting and linting:
+
+- [EditorConfig](https://editorconfig.org/)
+- [Rufo](https://github.com/ruby-formatter/rufo)
+- [Rubocop](https://github.com/rubocop-hq/rubocop)
+- [ESlint](https://eslint.org/)
+
+### EditorConfig
+
+EditorConfig ensures whitespace consistency. See the [Download a
+Plugin][editorconfig-plugin] section of the EditorConfig docs to find a plugin
+appropriate to your editor.
+
+[editorconfig-plugin]: https://editorconfig.org/#download
+
+### Rufo
+
+Rufo is an opinionated Ruby formatter we use to maintain consistent style with
+minimum configuration. See the [Editor support][rufo-plugin] section of the
+project README to find a suitable editor plugin.
+
+[rufo-plugin]: https://github.com/ruby-formatter/rufo#editor-support
+
+### RuboCop
+
+RuboCop is configured to ignore Ruby style and layout (deferring to Rufo) and focus
+on code complexity, performance, and suggested best practices.
+
+To run it from the command line, issue `bin/rubocop`, optionally passing
+a specific file(s). For a performance boost, you can also start a rubocop daemon
+with `bundle exec rubocop-daemon start`, in which case you'd lint with
+`bundle exec rubocop-daemon exec`.
+
+See the [Editor integration][rubocop-editor] section of the rubocop docs to find
+an appropriate plugin for on-the-fly linting.
+
+[rubocop-editor]: https://rubocop.readthedocs.io/en/latest/integration_with_other_tools/#editor-integration
+
+### ESLint
+
+ESlint is configured to run on project JavaScript. To run it, issue `yarn lint`.
 
 ## Vagrant development box
 
-For your convenience, this repository contains a Vagrantfile which is used to automatically set up and configure a virtual local (Ubuntu Xenial) development environment with all of the required dependencies preinstalled.
+In general, we recommend installing and running the app without Vagrant for local development
+
+If, however, you would prefer to have a virtual environment, this repository contains a Vagrantfile which is used to automatically set up and configure a virtual local (Ubuntu Xenial) development environment with all of the required dependencies preinstalled.
 
 ### Dependencies/Requirements
 - A computer that supports hardware virtualization (Intel VT-x/AMD-V)
@@ -81,7 +151,7 @@ If the initial provisioning fails for any reason, try running `vagrant provision
 
 ## Bug tracker
 
-Have a bug or a feature request? [Open a new issue](https://github.com/bikeindex/bike_index/issues/new).
+Have a bug or a feature request? [Open an issue](https://github.com/bikeindex/bike_index/issues/new).
 
 
 ## Community
@@ -93,10 +163,13 @@ Keep track of development and community news.
 
 ## Contributing
 
-Open a Pull request! The earlier you open the pull request, the earlier it's possible to discuss the direction of the changes.
+Open a Pull request!
 
-If your pull request contains Ruby patches or features, you must include relevant rspec tests.
+Don't wait until you have a finished feature before before opening the PR, unfinished pull requests are welcome! The earlier you open the pull request, the earlier it's possible to discuss the direction of the changes.
 
+Once the PR is ready for review, request review from the relevant person.
+
+If your pull request contains Ruby patches or features, you must include relevant Rspec tests.
 
 
 ... and go hard

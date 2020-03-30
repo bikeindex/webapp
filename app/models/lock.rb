@@ -1,4 +1,4 @@
-class Lock < ActiveRecord::Base
+class Lock < ApplicationRecord
   belongs_to :manufacturer
   belongs_to :lock_type
   belongs_to :user
@@ -14,5 +14,4 @@ class Lock < ActiveRecord::Base
       self.manufacturer.name
     end
   end
-
 end

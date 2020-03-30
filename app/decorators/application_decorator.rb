@@ -1,4 +1,7 @@
-class ApplicationDecorator < Draper::Decorator 
+# NB: Decorators are deprecated in this project.
+#     Use Helper methods for view logic, consider incrementally refactoring
+#     existing view logic from decorators to view helpers.
+class ApplicationDecorator < Draper::Decorator
   delegate_all
   include ActionView::Helpers::NumberHelper
 
@@ -6,18 +9,18 @@ class ApplicationDecorator < Draper::Decorator
     PaginatingDecorator
   end
 
-  def ass_name(association, extra = '')
-    ass = object.send(association, name)
-    [ass.name, extra].reject(&:blank?).join(' ') if ass.present?
+  def ass_name(association, extra = "")
+    assoc = object.public_send(association)
+    return if assoc.blank?
+    [assoc.name, extra].reject(&:blank?).join(" ")
   end
 
   def attr_list_item(desc = nil, title, with_colon: false)
     return nil unless desc.present?
     title = "#{title}:" if with_colon
-    html = h.content_tag(:span, title, class: 'attr-title')
+    html = h.content_tag(:span, title, class: "attr-title")
     h.content_tag(:li, html + desc)
   end
-
 
   def dl_list_item(dd = nil, dt)
     return nil unless dd.present?
@@ -50,47 +53,4 @@ class ApplicationDecorator < Draper::Decorator
       object.send(attribute)
     end
   end
-
-  def twitterable(user)
-    if user.show_twitter and user.twitter
-     h.link_to 'Twitter', "https://twitter.com/#{user.twitter}"
-    end
-  end
-
-  def websiteable(user)
-    if user.show_website and user.website
-      h.link_to 'Website', user.website
-    end
-  end
-
-  def show_twitter_and_website(user)
-    if twitterable(user) or websiteable(user)
-      html = ""
-      if twitterable(user)
-        html << twitterable(user)
-        html << " and #{websiteable(user)}" if websiteable(user)
-      else
-        html << websiteable(user)
-      end
-      html.html_safe
-    end
-  end
-
-  def short_address(item)
-    return nil unless item.country
-    html = "#{item.city}"
-    html << ", #{item.state.abbreviation}" if item.state.present?
-    html << " - #{item.country.iso}"
-    html
-  end
-
-  def display_phone(p=object.phone)
-    if p[/\+/]
-      phone = number_to_phone(p.gsub(/\+\d*/,''), country_code: p[/\A.\d*/].gsub('+',''), delimiter: ' ' )
-    else
-      phone = number_to_phone(p, delimiter: ' ')
-    end
-    phone
-  end
-
 end

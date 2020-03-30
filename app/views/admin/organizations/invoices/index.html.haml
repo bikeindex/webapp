@@ -1,19 +1,27 @@
-%header.with-subtitle.padded
-  %h1
-    #{ link_to @organization.name, admin_organization_path(@organization) } Invoices
-  = link_to "New Invoice", new_admin_organization_invoice_path(organization_id: @organization.to_param), class: "button-green sharing-links"
+.admin-subnav
+  .col-md-6
+    %h1
+      %em
+        = @organization.name
+      Invoices
+  .col-md-6
+    %ul
+      %li.nav-item
+        = link_to "New Invoice", new_admin_organization_invoice_path(organization_id: @organization.to_param), class: "nav-link"
+  %p.subtitle
+    View #{link_to @organization.name, admin_organization_path(@organization.to_param)} admin page
 
 = render partial: "/admin/organizations/invoices/table", locals: { invoices: @organization.invoices }
 
-%h2
+%h2.mt-4
   #{@organization.name} has #{pluralize(@organization.payments.count, "payment")}
 
 %p.less-strong
   You can add invoices to payments by editing them. If you don't see a payment in this list, #{link_to "search the payments", admin_payments_path } and add it by editing it.
 
-%section.full-screen-table
+.full-screen-table
   %table.table.table-striped.table-bordered
-    %thead
+    %thead.thead-light
       %th
         Paid&nbsp;at
       %th
@@ -45,6 +53,6 @@
                   = l payment.invoice.subscription_start_at, format: :convert_time
           %td
             %small
-              = payment.kind.humanize
+              = payment.payment_method.humanize
           %td
             = payment.amount_formatted

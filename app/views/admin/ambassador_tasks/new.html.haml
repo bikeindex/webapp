@@ -1,0 +1,8 @@
+.container
+  %h1 New Ambassador Activity
+
+  = render "form",
+    ambassador_task: @ambassador_task,
+    action: admin_ambassador_tasks_path,
+    method: :post,
+    submit_label: "Create"

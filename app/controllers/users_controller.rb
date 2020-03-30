@@ -1,43 +1,49 @@
 class UsersController < ApplicationController
-  layout 'application_revised'
   include Sessionable
-  before_filter :authenticate_user, only: [:edit]
-  before_filter :store_return_to, only: [:new]
-  before_filter :assign_edit_template, only: [:edit, :update]
-  
+  before_action :authenticate_user, only: [:edit]
+  before_action :skip_if_signed_in, only: [:new, :globalid]
+  before_action :assign_edit_template, only: [:edit, :update]
+
   def new
-    @user ||= User.new
-    if current_user.present?
-      flash[:success] = "You're already signed in, silly! You can log out by clicking on 'Your Account' in the upper right corner"
-      redirect_to user_home_url and return
-    end
+    @user ||= User.new(email: params[:email])
     render_partner_or_default_signin_layout
   end
 
   def create
     @user = User.new(permitted_parameters)
+    # Set the user's preferred locale if they have a locale we recognize
+    if requested_locale != I18n.default_locale
+      @user.preferred_language = requested_locale
+    end
     if @user.save
-      session[:partner] = nil # So they can leave this signup page if they want
-      if @user.confirmed
-        sign_in_and_redirect
-      else
-        render_partner_or_default_signin_layout
-      end
+      sign_in_and_redirect(@user)
     else
       @page_errors = @user.errors
       render_partner_or_default_signin_layout(render_action: :new)
     end
   end
 
+  def please_confirm_email
+    redirect_to(user_root_url) and return if current_user.present?
+    @user = unconfirmed_current_user
+    layout = sign_in_partner == "bikehub" ? "application_bikehub" : "application"
+  end
+
   def confirm
     begin
       @user = User.find(params[:id])
       if @user.confirmed?
-        flash[:success] = "Your user account is already confirmed. Please log in"
-        render_partner_or_default_signin_layout(redirect_path: new_session_path)
+        flash[:success] = translation(:already_confirmed)
+        # If signed in, redirect to partner if it should
+        if current_user.present? && sign_in_partner.present?
+          session.delete(:partner) # Only removing once signed in, PR#1435
+          redirect_to bikehub_url("account?reauthenticate_bike_index=true") and return # Only partner rn is bikehub, hardcode it
+        else
+          render_partner_or_default_signin_layout(redirect_path: new_session_path)
+        end
       else
         if @user.confirm(params[:code])
-          sign_in_and_redirect
+          sign_in_and_redirect(@user)
         else
           render :confirm_error_bad_token
         end
@@ -57,11 +63,13 @@ class UsersController < ApplicationController
   def password_reset
     if params[:token].present?
       @user = User.find_by_password_reset_token(params[:token])
-      if @user.present?
-        session[:return_to] = 'password_reset'
-        sign_in_and_redirect
+      if @user.present? && !@user.auth_token_expired?("password_reset_token")
+        session[:return_to] = "password_reset"
+        # They got the password reset email, which counts as confirming their email
+        @user.confirm(@user.confirmation_token) if @user.unconfirmed?
+        sign_in_and_redirect(@user)
       else
-        flash[:error] = "We're sorry, but that link is no longer valid."
+        flash[:error] = translation(:link_no_longer_valid)
         render action: :request_password_reset
       end
     elsif params[:email].present?
@@ -69,23 +77,23 @@ class UsersController < ApplicationController
       if @user.present?
         @user.send_password_reset_email
       else
-        flash[:error] = "Sorry, that email address isn't in our system."
+        flash[:error] = translation(:email_not_found)
         render action: :request_password_reset
       end
     else
-      redirect_to '/users/request_password_reset'
+      redirect_to request_password_reset_users_url
     end
   end
 
   def show
     user = User.find_by_username(params[:id])
     unless user
-      raise ActionController::RoutingError.new('Not Found')
+      raise ActionController::RoutingError.new("Not Found")
     end
     @owner = user
-    @user = user.decorate
+    @user = user
     unless user == current_user || @user.show_bikes
-      redirect_to user_home_url, notice: "Sorry, that user isn't sharing their bikes" and return
+      redirect_to user_home_url, notice: translation(:user_not_sharing) and return
     end
     @page = params[:page] || 1
     @per_page = params[:per_page] || 9
@@ -102,49 +110,51 @@ class UsersController < ApplicationController
     @user = current_user
     if params[:user][:password_reset_token].present?
       if @user.password_reset_token != params[:user][:password_reset_token]
-        @user.errors.add(:base, "Doesn't match user's password reset token")
-      elsif @user.reset_token_time < (Time.now - 1.hours)
-        @user.errors.add(:base, 'Password reset token expired, try resetting password again')
+        remove_session
+        flash[:error] = translation(:does_not_match_token)
+        redirect_to user_home_url and return
+      elsif @user.auth_token_expired?("password_reset_token")
+        remove_session
+        flash[:error] = translation(:token_expired)
+        redirect_to user_home_url and return
       end
     elsif params[:user][:password].present?
       unless @user.authenticate(params[:user][:current_password])
-        @user.errors.add(:base, "Current password doesn't match, it's required for updating your password")
+        @user.errors.add(:base, translation(:current_password_doesnt_match))
       end
     end
     if !@user.errors.any? && @user.update_attributes(permitted_update_parameters)
       AfterUserChangeWorker.perform_async(@user.id)
       if params[:user][:terms_of_service].present?
-        if params[:user][:terms_of_service] == '1'
+        if ParamsNormalizer.boolean(params[:user][:terms_of_service])
           @user.terms_of_service = true
           @user.save
-          flash[:success] = 'Thanks! Now you can use Bike Index'
+          flash[:success] = translation(:you_can_use_bike_index)
           redirect_to user_home_url and return
         else
-          flash[:notice] = 'You have to accept the Terms of Service if you would like to use Bike Index'
-          redirect_to accept_vendor_terms_url and return
+          flash[:notice] = translation(:accept_tos)
+          redirect_to accept_terms_url and return
         end
       elsif params[:user][:vendor_terms_of_service].present?
-        if params[:user][:vendor_terms_of_service] == '1'
-          @user.accept_vendor_terms_of_service
+        if ParamsNormalizer.boolean(params[:user][:vendor_terms_of_service])
+          @user.update_attributes(accepted_vendor_terms_of_service: true)
           if @user.memberships.any?
-            flash[:success] = "Thanks! Now you can use Bike Index as #{@user.memberships.first.organization.name}"
+            flash[:success] = translation(:you_can_use_bike_index_as_org, org_name: @user.memberships.first.organization.name)
           else
-            flash[:success] = 'Thanks for accepting the terms of service!'
+            flash[:success] = translation(:thanks_for_accepting_tos)
           end
-          redirect_to user_home_url and return
-          # TODO: Redirect to the correct page, somehow this breaks things right now though.
-          # redirect_to organization_home and return
+          redirect_to user_root_url and return
         else
-          redirect_to accept_vendor_terms_url, notice: 'You have to accept the Terms of Service if you would like to use Bike Index as through the organization' and return
+          redirect_to accept_vendor_terms_path, notice: translation(:accept_tos_to_use_as_org) and return
         end
       end
       if params[:user][:password].present?
-        @user.generate_auth_token
-        @user.set_password_reset_token
+        @user.generate_auth_token("auth_token")
+        @user.update_auth_token("password_reset_token")
         @user.reload
-        default_session_set
+        default_session_set(@user)
       end
-      flash[:success] = 'Your information was successfully updated.'
+      flash[:success] = translation(:successfully_updated)
       redirect_to my_account_url(page: params[:page]) and return
     end
     @page_errors = @user.errors.full_messages
@@ -169,35 +179,36 @@ class UsersController < ApplicationController
 
   def unsubscribe
     user = User.find_by_username(params[:id])
-    user.update_attribute :is_emailable, false if user.present?
-    flash[:success] = 'You have been unsubscribed from Bike Index updates'
+    user.update_attribute :notification_newsletters, false if user.present?
+    flash[:success] = translation(:successfully_unsubscribed)
     redirect_to user_root_url and return
   end
 
   private
 
   def permitted_parameters
-    params.require(:user).permit(User.old_attr_accessible).merge(permitted_partner_data)
-  end
-
-  def permitted_partner_data
-    return {} unless params[:partner].present? && params[:partner] == "bikehub"
-    { partner_data: { sign_up: "bikehub" } }
+    params.require(:user)
+          .permit(:name, :username, :email, :notification_newsletters, :notification_unstolen, :terms_of_service,
+                  :additional_emails, :title, :description, :phone, :street, :city, :zipcode, :country_id,
+                  :state_id, :avatar, :avatar_cache, :twitter, :show_twitter, :website, :show_website,
+                  :show_bikes, :show_phone, :my_bikes_link_target, :my_bikes_link_title, :password,
+                  :password_confirmation, :preferred_language)
+          .merge(sign_in_partner.present? ? { partner_data: { sign_up: sign_in_partner } } : {})
   end
 
   def permitted_update_parameters
     pparams = permitted_parameters.except(:email, :password_reset_token)
-    if pparams.keys.include?('username')
-      pparams.delete('username') unless pparams['username'].present?
+    if pparams.keys.include?("username")
+      pparams.delete("username") unless pparams["username"].present?
     end
     pparams
   end
 
   def edit_templates
     @edit_templates ||= {
-      root: 'User Settings',
-      password: 'Password',
-      sharing: 'Sharing + Personal Page'
+      root: translation(:user_settings),
+      password: translation(:password),
+      sharing: translation(:sharing),
     }.as_json
   end
 

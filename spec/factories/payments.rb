@@ -1,10 +1,10 @@
-FactoryGirl.define do
+FactoryBot.define do
   factory :payment do
-    user { FactoryGirl.create(:user) }
-    amount_cents 999
-    kind "stripe"
+    user { FactoryBot.create(:user) }
+    amount_cents { 999 }
+    payment_method { "stripe" }
     factory :payment_check do
-      kind "check"
+      payment_method { "check" }
     end
   end
 end

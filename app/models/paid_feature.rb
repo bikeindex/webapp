@@ -1,20 +1,49 @@
 # frozen_string_literal: true
 
-class PaidFeature < ActiveRecord::Base
-  include FriendlySlugFindable
+# In reality, this should be something like OrganizationFeatures. Initially everything was paid though
+class PaidFeature < ApplicationRecord
   include Amountable
   KIND_ENUM = { standard: 0, standard_one_time: 1, custom: 2, custom_one_time: 3 }.freeze
-  # Just to keep track of this somewhere - every paid feature that is locked should be in this array
-  # These slugs are used in the code (e.g. in the views)
-  EXPECTED_LOCKED_SLUGS = %w[csv-exports].freeze
+  # Organizations have enabled_feature_slugs as an array attribute to track which features should be enabled
+  # Every feature slug that is used in the code should be in this array
+  # Only slugs that are used in the code should be in this array
+  REG_FIELDS = %w[
+    organization_affiliation
+    extra_registration_number
+    reg_phone
+    reg_address
+  ].freeze
+  BIKE_ACTIONS = %w[
+    parking_notifications
+    abandoned_bikes
+    geolocated_messages
+    impound_bikes
+    unstolen_notifications
+  ].freeze
+  EXPECTED_SLUGS = (%w[
+    avery_export
+    bike_search
+    bike_stickers
+    csv_exports
+    messages
+    passwordless_users
+    regional_bike_counts
+    regional_stickers
+    show_bulk_import
+    show_multi_serial
+    show_partial_registrations
+    show_recoveries
+    skip_ownership_email
+  ] + BIKE_ACTIONS + REG_FIELDS).freeze
 
   has_many :invoice_paid_features
   has_many :invoices, through: :invoice_paid_features
+
   validates_uniqueness_of :name
+  validates :currency, presence: true
 
   enum kind: KIND_ENUM
 
-  before_validation :set_calculated_attributes
   after_commit :update_invoices
 
   scope :recurring, -> { where(kind: %w[standard custom]) }
@@ -22,16 +51,45 @@ class PaidFeature < ActiveRecord::Base
 
   def self.kinds; KIND_ENUM.keys.map(&:to_s) end
 
-  def one_time?; standard_one_time? || custom_one_time? end
-  def recurring?; !one_time? end
-  def locked?; is_locked end
+  # used by organization right now, but might be useful in other places
+  def self.matching_slugs(slugs)
+    slug_array = slugs.is_a?(Array) ? slugs : slugs.split(" ").reject(&:blank?)
+    matching_slugs = EXPECTED_SLUGS & slug_array
+    matching_slugs.any? ? matching_slugs : nil
+  end
 
-  def set_calculated_attributes
-    self.slug = Slugifyer.slugify(name)
+  def self.reg_field_bike_attrs
+    {
+      organization_affiliation: "organization_affiliation",
+      extra_registration_number: "extra_registration_number",
+      reg_phone: "phone",
+      reg_address: "registration_address",
+    }
+  end
+
+  def one_time?; standard_one_time? || custom_one_time? end
+
+  def recurring?; !one_time? end
+
+  def locked?
+    feature_slugs.any? && invoices.active.any?
+  end
+
+  def feature_slugs_string
+    feature_slugs.join(", ")
+  end
+
+  # We only want to store features that are used in the code. Some features overlap - e.g. there are packages that apply multiple features
+  # So check for matches with the EXPECTED_SLUGS which tracks which features we're using
+  def feature_slugs_string=(val)
+    self.feature_slugs = val.split(",").reject(&:blank?).map do |str|
+      fslug = str.downcase.strip
+      EXPECTED_SLUGS.include?(fslug) ? fslug : nil
+    end.compact
   end
 
   # Trigger an update to invoices which will, in turn, update the associated organizations
   def update_invoices
-    invoices.each { |i| i.update_attributes(updated_at: Time.now) }
+    invoices.each { |i| i.update_attributes(updated_at: Time.current) }
   end
 end

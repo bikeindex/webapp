@@ -1,11 +1,30 @@
-class FrameMaterial < ActiveRecord::Base
-  include FriendlySlugFindable
+class FrameMaterial
+  include Enumable
 
-  has_many :bikes
+  SLUGS = {
+    organic: 4,
+    composite: 3,
+    titanium: 2,
+    aluminum: 1,
+    steel: 0,
+  }.freeze
 
-  default_scope { order(:name) }
+  NAMES = {
+    aluminum: "Aluminum",
+    composite: "Carbon or composite",
+    organic: "Wood or organic material",
+    steel: "Steel",
+    titanium: "Titanium",
+  }.freeze
 
-  def self.steel
-    where(name: 'Steel', slug: 'steel').first_or_create
+  def initialize(slug)
+    @slug = slug&.to_sym
+    @id = SLUGS[@slug]
   end
+
+  def name
+    NAMES[slug]
+  end
+
+  attr_reader :slug, :id
 end

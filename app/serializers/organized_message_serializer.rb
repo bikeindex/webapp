@@ -1,5 +1,6 @@
 class OrganizedMessageSerializer < ApplicationSerializer
-  def perform_caching; true end
+  # def perform_caching; true end
+
   attributes :id, :kind, :created_at, :lat, :lng, :sender_id, :bike
 
   def created_at
@@ -17,8 +18,8 @@ class OrganizedMessageSerializer < ApplicationSerializer
   def bike
     bike_obj = object.bike
     {
-      id: bike_obj.id,
-      title: bike_obj.title_string
+      id: bike_obj&.id,
+      title: bike_obj&.title_string,
     }
   end
 end

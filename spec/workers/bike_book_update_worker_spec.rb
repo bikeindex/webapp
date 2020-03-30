@@ -1,44 +1,47 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe BikeBookUpdateWorker do
-  it { is_expected.to be_processed_in :updates }
+RSpec.describe BikeBookUpdateWorker, type: :job do
+  let(:subject) { BikeBookUpdateWorker }
 
-  it 'enqueues listing ordering job' do
+  it "is the correct queue" do
+    expect(subject.sidekiq_options["queue"]).to eq "high_priority"
+  end
+
+  it "enqueues listing ordering job" do
     BikeBookUpdateWorker.perform_async
     expect(BikeBookUpdateWorker).to have_enqueued_sidekiq_job
   end
 
   it "Doesn't break if the bike isn't on bikebook" do
-    bike = FactoryGirl.create(:bike)
+    bike = FactoryBot.create(:bike)
     BikeBookUpdateWorker.new.perform(bike.id)
   end
 
   it "grabs the components and doesn't overwrite components nothing if the bike isn't on bikebook" do
-    manufacturer = FactoryGirl.create(:manufacturer, name: 'SE Bikes')
-    bike = FactoryGirl.create(:bike,
-                              manufacturer_id: manufacturer.id,
-                              year: 2014,
-                              frame_model: 'Draft'
-                             )
-    ['fork',
-     'crankset',
-     'pedals',
-     'chain',
-     'wheel',
-     'tire',
-     'headset',
-     'handlebar',
-     'stem',
-     'grips/tape',
-     'saddle',
-     'seatpost'].each { |name| FactoryGirl.create(:ctype, name: name) }
-    component1 = FactoryGirl.create(:component,
-                                    bike: bike, ctype_id: Ctype.friendly_find('fork').id,
-                                    description: 'SE straight Leg Hi-Ten w/ Fender Mounts & Wide Tire Clearance')
+    manufacturer = FactoryBot.create(:manufacturer, name: "SE Bikes")
+    bike = FactoryBot.create(:bike,
+                             manufacturer_id: manufacturer.id,
+                             year: 2014,
+                             frame_model: "Draft")
+    ["fork",
+     "crankset",
+     "pedals",
+     "chain",
+     "wheel",
+     "tire",
+     "headset",
+     "handlebar",
+     "stem",
+     "grips/tape",
+     "saddle",
+     "seatpost"].each { |name| FactoryBot.create(:ctype, name: name) }
+    component1 = FactoryBot.create(:component,
+                                   bike: bike, ctype_id: Ctype.friendly_find("fork").id,
+                                   description: "SE straight Leg Hi-Ten w/ Fender Mounts & Wide Tire Clearance")
     expect(component1.is_stock).to be_falsey
-    component2 = FactoryGirl.create(:component,
-                                    bike: bike, ctype_id: Ctype.friendly_find('crankset').id,
-                                    description: 'Sweet cranks')
+    component2 = FactoryBot.create(:component,
+                                   bike: bike, ctype_id: Ctype.friendly_find("crankset").id,
+                                   description: "Sweet cranks")
     BikeBookUpdateWorker.new.perform(bike.id)
     bike.reload
     expect(bike.components.count).to eq(14)

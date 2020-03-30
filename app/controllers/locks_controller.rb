@@ -1,7 +1,6 @@
 class LocksController < ApplicationController
-  layout 'application_revised'
-  before_filter :authenticate_user
-  before_filter :find_lock, only: [:edit, :update, :destroy]
+  before_action :authenticate_user
+  before_action :find_lock, only: [:edit, :update, :destroy]
 
   def edit
   end
@@ -22,8 +21,8 @@ class LocksController < ApplicationController
   def create
     @lock = current_user.locks.build(permitted_parameters)
     if @lock.save
-      flash[:success] = 'Lock created successfully!'
-      redirect_to user_home_path(active_tab: 'locks')
+      flash[:success] = translation(:lock_created)
+      redirect_to user_home_path(active_tab: "locks")
     else
       @page_errors = @lock.errors
       render action: :new
@@ -32,7 +31,7 @@ class LocksController < ApplicationController
 
   def destroy
     @lock.destroy
-    redirect_to user_home_path(active_tab: 'locks')
+    redirect_to user_home_path(active_tab: "locks")
   end
 
   private
@@ -40,7 +39,7 @@ class LocksController < ApplicationController
   def find_lock
     @lock = current_user.locks.where(id: params[:id]).first
     unless @lock.present?
-      flash[:error] = "Whoops, that's not your lock!"
+      flash[:error] = translation(:not_your_lock)
       redirect_to user_home_path and return
     end
   end

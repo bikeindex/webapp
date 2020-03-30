@@ -2,72 +2,100 @@
   .primary-footer-nav
     .container
       .row
-        %nav.col-md-3.pull-right
-          %h4
-            = active_link "Donate to Bike Index", support_the_index_path
+        %nav.col-md-2.pull-right
+          %h4= t(".bike_index")
           %ul
-            %li
-              = active_link "Store", shop_path
-            %li
-              = active_link "Ambassadors", ambassadors_how_to_path
-        %nav.col-md-3.pull-right
-          %h4
-            = active_link "Help", help_path
-          %ul
-            %li
-              = active_link "Sign up a shop or organization", new_organization_path
-            %li
-              = active_link "BikeHub", "https://new.bikehub.com"
-        %nav.col-md-3.pull-right
-          %h4
-            = active_link "Dev and Design Resources", dev_and_design_path
-          %ul
-            %li
-              = active_link "API documentation", documentation_index_path
-            %li
-              = active_link "List of manufacturers", manufacturers_path
-        %nav.col-md-3.social-nav
-          %ul
-            %li
-              %a.footer-facebook{ href: "https://facebook.com/bikeindex", alt: "Bike Index Facebook" }
-                :plain
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.09 40.09">
-                    <g>
-                      <path class="svgpath" d="M2987.81,2564.42a20,20,0,1,1,20-20A20.07,20.07,0,0,1,2987.81,2564.42Zm0-38.57a18.52,18.52,0,1,0,18.52,18.52A18.54,18.54,0,0,0,2987.81,2525.85Z" transform="translate(-2967.76 -2524.33)"/>
-                      <path class="svgpath" d="M2997,2552.31a1,1,0,0,1-1,1h-4.75v-7.22h2.42l0.36-2.81h-2.79v-1.8a1.17,1.17,0,0,1,1.39-1.37h1.49v-2.52a19.91,19.91,0,0,0-2.17-.11,3.39,3.39,0,0,0-3.62,3.72v2.08h-2.43v2.81h2.43v7.22h-8.93a1,1,0,0,1-1-1v-16.59a1,1,0,0,1,1-1H2996a1,1,0,0,1,1,1v16.59Z" transform="translate(-2967.76 -2524.33)"/>
-                    </g>
-                  </svg>
+            %li= active_link t(".faq"), support_path
+            %li= active_link t(".blog"), news_index_path
+            %li= active_link t(".help"), help_path
+            %li= active_link t(".about"), about_path
+            %li= active_link t(".where_we_are"), where_path
+            %li= active_link t(".stolen_bike_recoveries"), recovery_stories_path
 
-            %li
-              %a{ href: 'https://twitter.com/BikeIndex', alt: 'Bike Index Twitter' }
-                :plain
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.09 40.09">
-                    <g>
-                      <path class="svgpath" d="M2806.61,2590.64a7.69,7.69,0,0,1-2.48,1,3.85,3.85,0,0,0-2.85-1.26,4,4,0,0,0-3.9,4,4.08,4.08,0,0,0,.1.91,11,11,0,0,1-8-4.18,4.07,4.07,0,0,0-.53,2,4,4,0,0,0,1.74,3.33,3.83,3.83,0,0,1-1.77-.5v0a4,4,0,0,0,3.13,3.92,3.72,3.72,0,0,1-1,.14,3.79,3.79,0,0,1-.73-0.07,3.92,3.92,0,0,0,3.65,2.78,7.71,7.71,0,0,1-4.85,1.71,7.81,7.81,0,0,1-.93-0.05,10.87,10.87,0,0,0,6,1.8c7.18,0,11.1-6.1,11.1-11.39,0-.17,0-0.35,0-0.52a8,8,0,0,0,1.95-2.07,7.62,7.62,0,0,1-2.24.63A4,4,0,0,0,2806.61,2590.64Z" transform="translate(-2777.81 -2578.33)"/>
-                      <path class="svgpath" d="M2797.85,2618.42a20,20,0,1,1,20-20A20.07,20.07,0,0,1,2797.85,2618.42Zm0-38.57a18.52,18.52,0,1,0,18.52,18.52A18.54,18.54,0,0,0,2797.85,2579.85Z" transform="translate(-2777.81 -2578.33)"/>
-                    </g>
-                  </svg>
-            %li
-              %a{ href:  'https://instagram.com/bikeindex', alt: 'Bike Index Instagram' }
-                :plain
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40.09 40.09">
-                    <g>
-                      <path class="svgpath" d="M2868.16,2589H2854a2.21,2.21,0,0,0-2.21,2.21v14.2a2.21,2.21,0,0,0,2.21,2.21h14.19a2.21,2.21,0,0,0,2.21-2.21v-14.2A2.21,2.21,0,0,0,2868.16,2589Zm-3,2.91a0.58,0.58,0,0,1,.58-0.58h1.75a0.58,0.58,0,0,1,.58.58v1.75a0.58,0.58,0,0,1-.58.58h-1.75a0.58,0.58,0,0,1-.58-0.58v-1.75Zm-4.05,2.85a3.57,3.57,0,1,1-3.58,3.57A3.58,3.58,0,0,1,2861.09,2594.78Zm7.54,10.53a0.58,0.58,0,0,1-.58.58h-14a0.58,0.58,0,0,1-.58-0.58v-8.73h2.33a3.55,3.55,0,0,0-.41,1.77,5.66,5.66,0,0,0,11.33,0,3,3,0,0,0-.45-1.77h2.33v8.73Z" transform="translate(-2840.54 -2578.33)"/>
-                      <path class="svgpath" d="M2860.58,2618.42a20,20,0,1,1,20-20A20.07,20.07,0,0,1,2860.58,2618.42Zm0-38.57a18.52,18.52,0,1,0,18.52,18.52A18.54,18.54,0,0,0,2860.58,2579.85Z" transform="translate(-2840.54 -2578.33)"/>
-                    </g>
-                  </svg>
+        %nav.col-md-2.pull-right
+          %h4= t(".support_us")
+          %ul
+            %li= active_link t(".donate"), support_bike_index_path
+            %li= active_link t(".store"), store_path
+            %li= active_link t(".ambassadors"), ambassadors_how_to_path
 
+        %nav.col-md-2.pull-right
+          %h4= t(".resources")
+          %ul
+            %li= active_link t(".api_documentation"), documentation_index_path
+            %li= active_link t(".dev_resources"), dev_and_design_path
+            %li= active_link t(".design_logos"), image_resources_path
+            %li= active_link t(".bike_manufacturer_list"), manufacturers_path
+            %li= active_link t(".stolen_bike_map"), "https://map.bikewise.org/"
 
+        %nav.col-md-2.pull-right
+          %h4= t(".who_we_serve")
+          %ul
+            %li= active_link t(".bike_shops"), for_bike_shops_path
+            %li= active_link t(".schools_and_universities"), for_schools_path
+            %li= active_link t(".cities"), for_cities_path
+            %li= active_link t(".law_enforcement"), for_law_enforcement_path
+            %li= active_link t(".community_groups"), for_community_groups_path
+
+        %nav.col-md-2.pull-right
+
+        %nav.col-md-2.social-nav
+          %ul
+            %li
+              = link_to "https://facebook.com/bikeindex", alt: 'Bike Index Facebook' do
+                %i.fab.fa-facebook-square.fa-3x
+            %li
+              = link_to "https://twitter.com/BikeIndex", alt: 'Bike Index Twitter'  do
+                %i.fab.fa-twitter.fa-3x
+            %li
+              = link_to "https://instagram.com/bikeindex", alt: 'Bike Index Instagram'  do
+                %i.fab.fa-instagram.fa-3x
 
   %nav.terms-and-stuff
     .container
-      %p
-        %span{data: {license: "https://github.com/bikeindex/bike_index/blob/master/LICENSE"}}
-          #{Time.zone.now.year} &copy; Bike Index, a 501(c)(3) nonprofit.
-        - if current_user.present? && current_user.has_membership?
-          #{link_to "Privacy policy", privacy_path}, #{link_to "vendor terms", vendor_terms_path}
-        - else
-          #{link_to "Privacy policy", privacy_path}
-        and #{link_to "terms and conditions", terms_path}.
+      .row
+        .col-md-6.text-left
+          = form_tag nil, method: :get, class: "locale-form" do
+            .row
+              .form-group
+                = label_tag(:locale, t(".language"))
+                = select_tag(:locale,
+                  options_for_select(language_choices, selected: I18n.locale),
+                  class: "form-control-sm",
+                  onchange: "this.form.submit()")
+                - if current_user.present? && current_user.preferred_language != I18n.locale
+                  %em.below-input-help.text-right
+                    = link_to t(".change_preferred_language"), my_account_path
+        .col-md-6.text-right
+          %p
+            = [link_to(t(".privacy_policy"), privacy_url),
+              (current_user&.has_membership? ? link_to(t(".vendor_terms"), vendor_terms_url) : nil),
+            link_to(t(".terms_and_conditions"), terms_url)].compact.to_sentence.html_safe
+
+          %p
+            %span{data: {license: "https://github.com/bikeindex/bike_index/blob/master/LICENSE"}}
+              = t(".copyright_html", current_year: Time.current.year)
+
 - cache 'facebook_pixel' do
   = render '/shared/facebook_pixel'
+
+:javascript
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-38316708-1', 'auto');
+  ga('send', 'pageview');
+
+  var trackOutboundLink = function(url) {
+    ga("send", "event", "outbound", "click", url, {
+      transport: "beacon",
+      hitCallback: function() {
+        document.location = url;
+      }
+    });
+  };
+
+  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-K88RMWC');
+
+<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K88RMWC" height="0" width="0" style="display:none;visibility:hidden"></iframe>

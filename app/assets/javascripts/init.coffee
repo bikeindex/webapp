@@ -3,6 +3,15 @@ unless String::trim then String::trim = -> @replace /^\s+|\s+$/g, ""
 
 # All the classes inherit from this
 class window.BikeIndex
+  loadFancySelects: ->
+    $('.unfancy.fancy-select select').selectize
+      create: false
+      plugins: ['restore_on_backspace']
+    $('.unfancy.fancy-select-placeholder select').selectize # When empty options are allowed
+      create: false
+      plugins: ['restore_on_backspace', 'selectable_placeholder']
+    # Remove them so we don't initialize twice
+    $('.unfancy.fancy-select, .unfancy.fancy-select-placeholder').removeClass('unfancy')
 
 # This file initializes scripts for the application
 class BikeIndex.Init extends BikeIndex
@@ -26,6 +35,7 @@ class BikeIndex.Init extends BikeIndex
     # All the rest per-page javascripts
     pageClasses =
       welcome_index: BikeIndex.WelcomeIndex
+      welcome_recovery_stories: BikeIndex.WelcomeRecoveryStories
       info_where: BikeIndex.InfoWhere
       info_support_bike_index: BikeIndex.Payments
       payments_new: BikeIndex.Payments
@@ -48,16 +58,6 @@ class BikeIndex.Init extends BikeIndex
       locks_edit: BikeIndex.LocksForm
       locks_create: BikeIndex.LocksForm
     window.pageScript = new pageClasses[body_id] if Object.keys(pageClasses).includes(body_id)
-
-  loadFancySelects: ->
-    $('.unfancy.fancy-select select').selectize
-      create: false
-      plugins: ['restore_on_backspace']
-    $('.unfancy.fancy-select-placeholder select').selectize # When empty options are allowed
-      create: false
-      plugins: ['restore_on_backspace', 'selectable_placeholder']
-    # Remove them so we don't initialize twice
-    $('.unfancy.fancy-select, .unfancy.fancy-select-placeholder').removeClass('unfancy')
 
   initializeNoTabLinks: ->
     # So in forms we can provide help without breaking tab index
@@ -95,17 +95,17 @@ class BikeIndex.Init extends BikeIndex
       if preciseTime then time.format("YYYY-MM-DD h:mma") else time.format("YYYY-MM-DD")
 
   localizeTimes: ->
-    window.timezone ||= moment.tz.guess()
-    moment.tz.setDefault(window.timezone)
+    window.localTimezone ||= moment.tz.guess()
+    moment.tz.setDefault(window.localTimezone)
     window.yesterday = moment().subtract(1, "day").startOf("day")
     window.today = moment().startOf("day")
     window.tomorrow = moment().endOf("day")
     # Update any hidden fields with current timezone
-    $(".hiddenFieldTimezone").val(window.timezone)
+    $(".hiddenFieldTimezone").val(window.localTimezone)
 
     displayLocalDate = @displayLocalDate
 
-    # Write local time
+    # Write local time (format: 2018-07-14T01:00:00-0500)
     $(".convertTime").each ->
       $this = $(this)
       $this.removeClass("convertTime")
@@ -141,8 +141,8 @@ warnIfUnsupportedBrowser = ->
 enableEscapeForModals = ->
   $('.modal').on 'show.bs.modal', ->
     $(window).on 'keyup', (e) ->
-      return unless e.keyCode == 27 # Escape key
-      $('.modal').modal('hide')
+      $('.modal').modal('hide') if e.keyCode == 27 # Escape key
+    return true
   # Remove keyup trigger, clean up after yourself
   $('.modal').on 'hide.bs.modal', ->
     $(window).off 'keyup'
@@ -160,15 +160,22 @@ window.updateSearchBikesHeaderLink = ->
       distance = null
     else
       localStorage.setItem('distance', distance)
-  distance ||= 100
-  url = "/bikes?stolenness=proximity&location=#{location}&distance=#{distance}"
-  $('#search_bikes_header_link').attr('href', url)
+
+renderDonationModal = ->
+  hideModal = localStorage.getItem("hideDonationModal")
+  unless hideModal == "true"
+    $("#donationModal").modal("show")
+    new BikeIndex.Payments
+    # NOTE: This is also set in payments.coffee on payment submission
+    $("#donationModal").on 'hide.bs.modal', ->
+      localStorage.setItem("hideDonationModal", "true")
 
 $(document).ready ->
   window.updateSearchBikesHeaderLink()
+  enableEscapeForModals()
   window.BikeIndex.Init = new BikeIndex.Init
   if document.getElementById('binx_registration_widget')
     new window.ManufacturersSelect('#binx_registration_widget #b_param_manufacturer_id')
-  new window.AdDisplayer
   warnIfUnsupportedBrowser()
-  enableEscapeForModals()
+  if $("#donationModal").length
+    renderDonationModal()

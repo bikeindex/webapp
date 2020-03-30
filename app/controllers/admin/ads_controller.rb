@@ -1,6 +1,6 @@
 class Admin::AdsController < Admin::BaseController
-  before_filter :find_ad, except: [:index, :new, :create]
-  before_filter :find_organizations, only: [:new, :edit]
+  before_action :find_ad, except: [:index, :new, :create]
+  before_action :find_organizations, only: [:new, :edit]
 
   def index
     @ads = Ad.all
@@ -11,7 +11,6 @@ class Admin::AdsController < Admin::BaseController
   end
 
   def edit
-    
   end
 
   def update
@@ -37,11 +36,10 @@ class Admin::AdsController < Admin::BaseController
     end
   end
 
-
   protected
 
   def permitted_parameters
-    params.require(:ad).permit(Ad.old_attr_accessible)
+    params.require(:ad).permit(:title, :body, :target_url, :organization_id, :image)
   end
 
   def find_ad
@@ -51,5 +49,4 @@ class Admin::AdsController < Admin::BaseController
   def find_organizations
     @organizations = Organization.all
   end
-
 end

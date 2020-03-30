@@ -1,10 +1,10 @@
-require 'grape_logging'
+require "grape_logging"
 
 module GrapeLogging
   module Loggers
     class BinxLogger < GrapeLogging::Loggers::Base
       def parameters(request, _)
-        { remote_ip: request.env['HTTP_CF_CONNECTING_IP'], format: 'json' }
+        { remote_ip: ForwardedIpAddress.parse(request), format: "json" }
       end
     end
   end
@@ -12,7 +12,7 @@ end
 
 module API
   class Base < Grape::API
-    use GrapeLogging::Middleware::RequestLogger, instrumentation_key: 'grape_key',
+    use GrapeLogging::Middleware::RequestLogger, instrumentation_key: "grape_key",
                                                  include: [GrapeLogging::Loggers::BinxLogger.new,
                                                            GrapeLogging::Loggers::FilterParameters.new]
     mount API::V3::RootV3
@@ -23,12 +23,17 @@ module API
       eclass = e.class.to_s
       message = "OAuth error: #{e}" if eclass =~ /WineBouncer::Errors/
       opts = { error: message || e.message }
-      opts[:trace] = e.backtrace[0, 10] unless Rails.env.production?
-      Rack::Response.new(opts.to_json, status_code_for(e, eclass), {
-                           'Content-Type' => 'application/json',
-                           'Access-Control-Allow-Origin' => '*',
-                           'Access-Control-Request-Method' => '*'
-                         }).finish
+      status_code = status_code_for(e, eclass)
+      if Rails.env.production?
+        Honeybadger.notify(e) if status_code > 450 # Only notify in production for 500s
+      else
+        opts[:trace] = e.backtrace[0, 10]
+      end
+      Rack::Response.new(opts.to_json, status_code, {
+        "Content-Type" => "application/json",
+        "Access-Control-Allow-Origin" => "*",
+        "Access-Control-Request-Method" => "*",
+      }).finish
     end
 
     def self.status_code_for(error, eclass)

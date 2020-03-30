@@ -1,4 +1,4 @@
-class Manufacturer < ActiveRecord::Base
+class Manufacturer < ApplicationRecord
   include AutocompleteHashable
 
   validates_presence_of :name
@@ -12,7 +12,7 @@ class Manufacturer < ActiveRecord::Base
   mount_uploader :logo, AvatarUploader
   default_scope { order(:name) }
 
-  scope :frames, -> { where(frame_maker: true) }
+  scope :frame_makers, -> { where(frame_maker: true) }
   scope :with_websites, -> { where("website is NOT NULL and website != ''") }
   scope :with_logos, -> { where("logo is NOT NULL and logo != ''") }
 
@@ -44,18 +44,18 @@ class Manufacturer < ActiveRecord::Base
     end
 
     def other
-      where(name: 'Other', frame_maker: true).first_or_create
+      where(name: "Other", frame_maker: true).first_or_create
     end
 
     def fill_stripped(n)
-      n.gsub!(/accell/i, '') if n.match(/accell/i).present?
+      n.gsub!(/accell/i, "") if n.match(/accell/i).present?
       Slugifyer.manufacturer(n)
     end
 
     def import(file)
       CSV.foreach(file.path, headers: true, header_converters: :symbol) do |row|
         mnfg = find_by_name(row[:name]) || new
-        mnfg.attributes = row.to_hash.slice(*old_attr_accessible)
+        mnfg.attributes = row.to_h.slice(*old_attr_accessible)
         next if mnfg.save
         puts "\n#{row} \n"
         fail mnfg.errors.full_messages.to_sentence
@@ -77,22 +77,23 @@ class Manufacturer < ActiveRecord::Base
   # Also, probably just a good idea in general
   def ensure_non_blocking_name
     return true unless name
-    errors.add(:name, 'Cannot be the same as a color name') if Color.pluck(:name).map(&:downcase).include?(name.strip.downcase)
+    errors.add(:name, :cannot_match_a_color_name) if Color.pluck(:name).map(&:downcase).include?(name.strip.downcase)
   end
 
   before_save :set_slug, :set_website_and_logo_source
+
   def set_slug
     self.slug = Slugifyer.manufacturer(name)
   end
 
   def set_website_and_logo_source
     self.website = website.present? ? Urlifyer.urlify(website) : nil
-    self.logo_source = logo.present? ? (logo_source || 'manual') : nil
+    self.logo_source = logo.present? ? (logo_source || "manual") : nil
     true
   end
 
   def autocomplete_hash_category
-    frame_maker ? 'frame_mnfg' : 'mnfg'
+    frame_maker ? "frame_mnfg" : "mnfg"
   end
 
   def autocomplete_hash_priority
@@ -110,8 +111,8 @@ class Manufacturer < ActiveRecord::Base
       data: {
         slug: slug,
         priority: autocomplete_hash_priority,
-        search_id: search_id
-      }
+        search_id: search_id,
+      },
     }.as_json
   end
 

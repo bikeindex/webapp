@@ -1,7 +1,6 @@
 class ErrorsController < ApplicationController
   respond_to :html, :json
-  before_filter :set_permitted_format
-  layout 'application_revised'
+  before_action :set_permitted_format
 
   def bad_request
     render status: 400
@@ -26,6 +25,6 @@ class ErrorsController < ApplicationController
   private
 
   def set_permitted_format
-    request.format = 'html' unless request.format == 'json'
+    request.format = "html" unless request.format == "json"
   end
 end

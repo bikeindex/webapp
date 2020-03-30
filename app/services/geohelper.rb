@@ -10,8 +10,9 @@ class Geohelper
       result.first.formatted_address || result.first.address
     end
 
-    def coordinates_for(addy)
-      result = Geocoder.search(formatted_address(addy))
+    # accept 'result' parameter to skip lookup for formatted_address_hash
+    def coordinates_for(addy, result: nil)
+      result ||= Geocoder.search(formatted_address(addy))
       return nil unless result&.any?
       geometry = result.first&.data && result.first.data["geometry"]
       if geometry && geometry["location"].present?
@@ -28,6 +29,31 @@ class Geohelper
     def formatted_address(addy)
       address = addy.to_s.strip
       address.match(/\A\d{5}\z/).present? ? "zipcode: #{address}" : address
+    end
+
+    # TODO: location refactor - make this return the updated location attrs
+    # Given a string, return a address hash for that location
+    def formatted_address_hash(addy)
+      result = Geocoder.search(formatted_address(addy))
+      return nil unless result&.first&.formatted_address.present?
+      coordinates = coordinates_for(addy, result: result)
+      address_hash_from_geocoder_result(result&.first&.formatted_address)
+        .merge(coordinates.present? ? coordinates : {})
+    end
+
+    def address_hash_from_geocoder_result(addy)
+      address_array = addy.split(",").map(&:strip)
+      country = address_array.pop # Don't care about this rn
+      code_and_state = address_array.pop
+      state, code = code_and_state.split(" ") # In case it's a full zipcode with a dash
+      city = address_array.pop
+      {
+        address: address_array.join(", "),
+        city: city,
+        state: state,
+        zipcode: code,
+        country: country,
+      }.with_indifferent_access
     end
   end
 end

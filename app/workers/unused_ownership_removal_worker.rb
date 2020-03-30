@@ -1,12 +1,32 @@
-class UnusedOwnershipRemovalWorker
-  include Sidekiq::Worker
-  sidekiq_options queue: 'afterwards'
-  sidekiq_options backtrace: true
-    
-  def perform(id)
-    ownership = Ownership.find(id)
-    unless Bike.unscoped.where(id: ownership.bike_id).present?
-      ownership.update_attribute :current, false 
+class UnusedOwnershipRemovalWorker < ScheduledWorker
+  prepend ScheduledWorkerRecorder
+
+  def self.frequency
+    23.hours
+  end
+
+  def perform(id = nil)
+    if id.blank?
+      enqueue_scheduled_jobs
+    else
+      remove_unused_ownership(id)
     end
+  end
+
+  def remove_unused_ownership(ownership_id)
+    ownership = Ownership.find(ownership_id)
+    return if Bike.unscoped.exists?(id: ownership.bike_id)
+
+    ownership.update_attribute :current, false
+  end
+
+  def enqueue_scheduled_jobs
+    # Rather than doing all the ownerships, just do a random slice
+    Ownership
+      .where(current: true)
+      .order(Arel.sql("random()"))
+      .limit(50_000)
+      .pluck(:id)
+      .each { |id| UnusedOwnershipRemovalWorker.perform_async(id) }
   end
 end

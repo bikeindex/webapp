@@ -1,7 +1,4 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe Listicle do
-  describe 'validations' do
-    it { is_expected.to belong_to :blog }
-  end
+RSpec.describe Listicle, type: :model do
 end

@@ -1,117 +1,94 @@
-.home-subhead
-  .container
-    %h2
-      Help us fight bicycle theft&mdash;Index your stolen bike.
-    
-    %h3
-      The Bike Index makes stolen bikes harder to sell and easier to recover by making it possible to find and contact stolen bike owners.
-    %h3
-      The process is simple, secure, and free. #{link_to "Register your stolen bike", new_bike_url(stolen: true)}.
-    %h3
-      We've <strong>registered #{number_with_delimiter(Bike.count)} bikes</strong> and <strong>recovered #{number_with_delimiter(StolenRecord.recovered.where("date_recovered < ?", Time.zone.now.beginning_of_day).count)}</strong> stolen bikes.
-    %h3
-      - cache('stolen_home_organizations', expires_in: 1.day) do
-        So far we have <strong>#{Organization.count} partner bike shops, police departments, </strong> and <strong>bike advocacy organizations</strong>.
 .container
-  %h4.multi-search-toggle
-    %a#show_multi_search{ href: '#' }
-      show multi-serial search
-  .multiserial-form#ms_form_section
-    .padded
-    %h3
-      Multiple Serial Search
-    = text_area_tag :multi_serial_search, nil, placeholder: 'Enter multiple serial numbers. Separate them with commas or new lines', class: 'form-control'
-    %a#search_serials.sbrbtn{ href: '#', data: { target: api_v1_bikes_url } }
-      = image_tag 'stolen/search.svg'
-    %section#ms_search_section.hidden
-      .padded
-      .multiserial-response
-        %h2
-          Multi serial search results
-        %ul#serials_submitted.multiserials-list
-        .multiserial-fuzzy-box
-          %a#multiserial_fuzzy.button-green{ href: '#', data: { target: close_serials_api_v1_bikes_url }}
-            %span
-              Find nearly matching serials (in case of a mis-entry)
-            %span.ms-short-fuzzy
-              Find near matches
-        
-        #bikes_returned.padded
+  %h2= t(".what_to_do_if_your_bike_is_stolen")
 
-/ .container
-/ google ad went here
+  %p= t(".if_you_are_here_your_bike_was_probably_stolen")
 
-.sbr-wrap#sbr-body
-  
-  %section.sbr-get-involved
-    .container
-      %h1
-        Get Involved! Help us stop bike theft
+  %ol
+    %li= t(".file_a_police_report")
+    %li= t(".make_sure_your_bike_is_registered_html", new_bike_link: link_to(t(".bike_index"), new_bike_url(stolen: true)))
+    %li= t(".look_for_local_stolen_bike_groups_on_face")
+    %li= t(".tell_everyone_you_know")
 
-      .involve-yerself
-        .involve-report
-          %h3
-            Report bike theft issues:
-          .involve-report-form
-            = form_for @feedback do |f|
-              = f.hidden_field :feedback_type, value: 'stolen_information'
-              - if @feedback.errors.any?
-                #alert-block
-                  .alert.alert-error
-                    %a.close{"data-dismiss" => "alert"} ×
-                    %h4
-                      Please fix the following 
-                      = pluralize(@feedback.errors.count, "error")
-                    %ul
-                      - @feedback.errors.full_messages.each do |msg|
-                        %li 
-                          = msg
-              .report-type
-                %label
-                  = f.radio_button :title, "Someone is selling a stolen bike", checked: true
-                  Report someone selling a stolen bike
-                %label
-                  = f.radio_button :title, "Bike ChopShop report"
-                  Report a bicycle chop shop
+  %h2= t(".what_happens_next")
+
+  %ol
+    %li= t(".your_local_police_department_will_do_what")
+    %li= t(".bike_index_will_broadcast")
+    %li= t(".keep_an_eye_on_craigslist")
+    %li= t(".check_out_your_local_flea_market")
+
+
+  %p
+    - recoveries_count = number_with_delimiter(Counts.recoveries)
+    - donations_link = link_to t(".donation"), support_bike_index_url
+    - ambassadors_link = link_to t(".ambassador"), ambassadors_url
+    = t(".we_wish_you_the_best_of_luck_html", recoveries_count: recoveries_count, donations_link: donations_link, ambassadors_link: ambassadors_link)
+
+  %hr.mt-4.mb-4
+
+
+  %section.sbr-get-involved.mt-4.mb-4
+    %h2.text-center.mt-4
+      = t(".other_recovery_tools")
+
+    .involve-yerself.mt-4
+      .involve-report
+        %h3.header-font-alt
+          = t(".report_bike_theft_issues")
+        .involve-report-form
+
+          = form_for @feedback do |f|
+            = f.hidden_field :feedback_type, value: "stolen_information"
+            - if @feedback.errors.any?
+              #alert-block
+                .alert.alert-error
+                  %a.close{"data-dismiss" => "alert"} ×
+                  %h4
+                    = t(".please_fix_the_following", errors: pluralize(@feedback.errors.count, t(".error")))
+                  %ul
+                    - @feedback.errors.full_messages.each do |msg|
+                      %li
+                        = msg
+            .report-type
               %label
-                Reporting your own bike stolen? You need to
-                %a{ href: new_bike_path, style: "font-weight: bold; color: #fff; text-decoration: underline;" }
-                  register it
-                first
-              .contact-text
-                = f.text_area :body, placeholder: "Where is this happening? URL, address - any information you have", rows: 5, class: 'form-control'
+                = f.radio_button :title, t(".someone_is_selling_a_stolen_bike"), checked: true
+                = t(".report_someone_selling_a_stolen_bike")
+              %label
+                = f.radio_button :title, t(".bike_chopshop_report")
+                = t(".report_a_bicycle_chop_shop")
+            %label
+              - register_it_link = link_to t(".register_it"), new_bike_path, style: "font-weight: bold; color: #fff; text-decoration: underline;"
+              = t(".reporting_your_own_bike_stolen_html", register_it_link: register_it_link)
+
+            .contact-text
+              = f.text_area :body, placeholder: t(".where_is_this_happening"), rows: 5, class: 'form-control'
+            - if current_user.present?
               .contact-actions.control-group
-                = f.email_field :email, placeholder: "Your email address", class: 'form-control'
-                = f.submit 'Send alert!', class: 'btn pull-right'
+                = f.email_field :email, placeholder: t(".your_email_address"), class: 'form-control'
 
-        .involve-widget
-          %h3
-            List recent stolen bikes on your site
-          
-          
-          #binx_stolen_widget{ data: { location: 'ip', height: '350px' } }
-          <script src="https://binx-widget.herokuapp.com/include.js"></script>
-                
-    / %section
-    /   .container
-    /     = render '/stolen/stickers'
+                = f.submit t(".send_alert"), class: 'btn pull-right'
+            - else
+              .contact-actions.control-group{ style: "text-align: center;" }
+                - login_link = link_to t(".sign_in"), new_session_url, style: "color: #ccc;"
+                = t(".please_login_to_make_report_html", login_link: login_link)
 
-    %section
-      / .container
-      /   %h3
-      /     #{link_to "Donation is also always appreciated", support_the_index_path}
-      /   %p
-      /     If stickers aren't your thing, a 
-      /     %strong
-      /       donation is also always appreciated.
-      /     Every single penny you donate goes towards recovering more bikes.
-      /   .padded
-    .container
+      .involve-widget
+        %h3.header-font-alt
+          - stolen_widget_link = link_to t(".stolen_widget"), "https://github.com/bikeindex/stolen_bikes_widget_html"
+          = t(".list_recent_stolen_bikes_html", stolen_widget_link: stolen_widget_link)
+        #binx_stolen_widget
 
-      .alert.alert-info.stolen-bike-merge-alert
-        %h4
-          StolenBicycleRegistry.com leveled up!
-        %p
-          StolenBicycleRegistry.com merged with Bike Index in 2014 to become the largest open bike registration service. You can read the #{link_to 'Bike Index post', 'https://bikeindex.org/news/providing-the-largest-and-most-effective-bicycle-registry---ever'} and #{link_to "StolenBikeRegistry.com's anouncement", 'https://medium.com/@stolenbikessfo/stolenbicycleregistry-just-merged-with-bikeindex-org-102ffa548821'}!
-        %p
-          \- Bryan Hance & Bike Index
+  #multi-serial-search
+
+= javascript_pack_tag "multi_serial_search/index"
+
+-# Stolen Bike Widget
+%script{type: "text/javascript", src: "https://widget.bikeindex.org/stolen-widget.js"}
+:javascript
+  $(document).ready(function() {
+    BikeIndexWidget.init({
+      height: 350,
+      location: 'ip',
+      elementId: 'binx_stolen_widget'
+    });
+  });

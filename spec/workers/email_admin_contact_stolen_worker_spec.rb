@@ -1,13 +1,11 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe EmailAdminContactStolenWorker do
-  it { is_expected.to be_processed_in :notify }
-
-  describe 'perform' do
-    it 'sends an email' do
-      stolen_record = FactoryGirl.create(:stolen_record)
-      FactoryGirl.create(:ownership, bike: stolen_record.bike)
-      customer_contact = FactoryGirl.create(:customer_contact, bike: stolen_record.bike)
+RSpec.describe EmailAdminContactStolenWorker, type: :job do
+  describe "perform" do
+    it "sends an email" do
+      stolen_bike = FactoryBot.create(:stolen_bike)
+      FactoryBot.create(:ownership, bike: stolen_bike)
+      customer_contact = FactoryBot.create(:customer_contact, bike: stolen_bike)
       ActionMailer::Base.deliveries = []
       EmailAdminContactStolenWorker.new.perform(customer_contact.id)
       expect(ActionMailer::Base.deliveries).not_to be_empty
